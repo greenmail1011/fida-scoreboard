@@ -184,6 +184,17 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
 .chip::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
 .chip.online{color:var(--ok);background:rgba(60,207,122,.12)}
 .chip.offline,.chip.connecting{color:var(--amber);background:rgba(242,180,60,.12)}
+.auth .who{font:700 13px var(--f-ui);color:var(--fg);overflow-wrap:anywhere}
+.gbtn{display:inline-flex;align-items:center;gap:8px}
+.gbtn .g{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#fff;color:#4285f4;font:900 12px/1 Arial,sans-serif}
+.admins{flex-basis:100%;border-top:1px solid var(--line);padding-top:10px;margin-top:2px}
+.admins-h{font-weight:900;font-size:13px;margin-bottom:6px}.admins-h small{color:var(--muted);font-weight:700;margin-left:6px}
+.admins ul{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:4px}
+.admins li{display:flex;align-items:center;gap:10px;padding:4px 8px;background:var(--panel-2);border-radius:6px;font-size:13px}
+.admins li span{flex:1;overflow-wrap:anywhere}.admins li em{font-style:normal;color:var(--ok);font-weight:900;font-size:12px}
+.admins-add{display:flex;gap:8px;flex-wrap:wrap}
+.cloud .admins-add input{width:auto;flex:1;min-width:12em;text-transform:none;letter-spacing:0;font-family:var(--f-ui)}
+body.locked .desk,body.locked .cp-grid .bigs,body.locked #cp-red,body.locked #cp-blue,body.locked #op-pause,body.locked #op-reset,body.locked .opbar .js-undo{opacity:.5}
 .links{display:flex;flex-direction:column;gap:4px;flex-basis:100%;font-size:12px;min-width:0}
 .links div{display:flex;align-items:center;gap:8px;min-width:0}
 .links span{color:var(--muted);white-space:nowrap}
@@ -254,6 +265,7 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
 
 <!-- ================= OVERVIEW ================= -->
 <section id="v-overview" class="wrap">
+  <div class="cloud auth js-auth"></div>
   <div class="cloud js-cloud" data-cid="ov"></div>
   <div class="opbar">
     <span class="pill js-phase" data-phase="setup">賽前準備</span>
@@ -322,6 +334,7 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
 
 <!-- ================= COMPUTER CONTROL ================= -->
 <section id="v-control" class="wrap" hidden>
+  <div class="cloud auth js-auth"></div>
   <div class="cloud js-cloud" data-cid="cp"></div>
   <div class="cp-status">
     <div class="cp-team r"><span class="cp-score" id="cp-score-red">0</span><div><h2 id="cp-name-red"></h2><span class="cp-foul" id="cp-foul-red"></span></div></div>
@@ -374,8 +387,127 @@ const FB_BASE='https://cdn.jsdelivr.net/npm/firebase@10.14.1/';
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('無法載入 Firebase 程式庫'));document.head.appendChild(s);});}
 let fbP=null;
 function loadFirebase(){if(!fbP)fbP=(async()=>{await loadScript(FB_BASE+'firebase-app-compat.js');await Promise.all([loadScript(FB_BASE+'firebase-auth-compat.js'),loadScript(FB_BASE+'firebase-database-compat.js')]);if(!firebase.apps.length)firebase.initializeApp(FB_CONFIG);return firebase;})().catch(e=>{fbP=null;throw e;});return fbP;}
-const cloud={on:false,room:null,readOnly:true,db:null,ref:null,status:'off',offset:0,err:'',busy:false};
+const cloud={on:false,room:null,viewer:true,readOnly:true,db:null,ref:null,status:'off',offset:0,err:'',busy:false};
 const srvNow=()=>Date.now()+(cloud.on?cloud.offset:0);
+
+/* ---------- admin sign-in (Google). Anything that changes the score needs an admin account. ---------- */
+const SUPER_ADMIN='dronex666666@gmail.com';
+const emailKey=e=>String(e||'').trim().toLowerCase().replace(/\./g,',');
+const keyEmail=k=>String(k||'').replace(/,/g,'.');
+const EMAIL_RE=/^[^\s@,#$\[\]\/]+@[^\s@,#$\[\]\/]+\.[^\s@,#$\[\]\/]+$/;
+/* who: live sign-in state. ADM: last known result on this device, so a signed-in admin keeps working offline */
+const who={ready:false,loading:false,user:null,email:'',admin:false,checked:false,live:false,isSuper:false,err:'',list:null,busy:false};
+let ADM=null;try{ADM=JSON.parse(localStorage.getItem('fida-admin-v1')||'null');}catch(e){ADM=null;}
+function saveADM(){try{if(ADM)localStorage.setItem('fida-admin-v1',JSON.stringify(ADM));else localStorage.removeItem('fida-admin-v1');}catch(e){}}
+function isAdmin(){return who.ready?(!!who.user&&who.admin):!!(ADM&&ADM.admin);}
+const canOperate=()=>isAdmin()&&!(cloud.on&&cloud.viewer);
+function syncRole(){cloud.readOnly=cloud.viewer||!isAdmin();document.body.classList.toggle('locked',!canOperate());
+  $$('[data-name],#op-duration').forEach(el=>{el.disabled=!canOperate();});}
+function lockMsg(){
+  if(cloud.on&&cloud.viewer)return '這台裝置只能觀看';
+  if(who.user&&who.checked&&!who.admin)return `${who.email} 不是管理員，無法操作分數`;
+  return '請先在上方用管理員 Google 帳號登入，才能操作分數';
+}
+let adminRef=null,listRef=null;
+function stopAdminWatch(){try{if(adminRef)adminRef.off();if(listRef)listRef.off();}catch(e){}adminRef=listRef=null;who.list=null;}
+function setAdmin(v){
+  who.admin=!!v;who.checked=true;who.live=true;
+  ADM=who.user?{uid:who.user.uid,email:who.email,admin:who.admin}:null;saveADM();
+  syncRole();renderAuth();renderCloud();renderAll();
+  if(who.admin&&cloud.on)syncPending();
+}
+let authP=null;
+function initAuth(){
+  if(authP)return authP;
+  who.loading=true;who.err='';renderAuth();
+  authP=loadFirebase().then(fb=>{
+    const auth=fb.auth();
+    auth.getRedirectResult().catch(e=>{who.err=loginErr(e);renderAuth();});
+    auth.onAuthStateChanged(u=>{
+      stopAdminWatch();who.live=false;
+      who.ready=true;who.loading=false;who.user=u||null;who.err=who.err||'';
+      if(!u){who.email='';who.admin=false;who.checked=true;who.isSuper=false;ADM=null;saveADM();syncRole();renderAuth();renderCloud();renderAll();return;}
+      who.email=String(u.email||'').toLowerCase();
+      who.isSuper=who.email===SUPER_ADMIN&&u.emailVerified;
+      if(who.isSuper){setAdmin(true);
+        listRef=fb.database().ref('admins');
+        listRef.on('value',s=>{who.list=Object.keys(s.val()||{}).filter(k=>(s.val()||{})[k]===true).map(keyEmail).sort();renderAuth();},e=>{who.err='讀取管理員名單失敗：'+e.message;renderAuth();});
+        return;}
+      /* until the database answers (e.g. offline), keep this device's last result for the same account */
+      who.admin=!!(ADM&&ADM.uid===u.uid&&ADM.admin);who.checked=!!(ADM&&ADM.uid===u.uid);syncRole();renderAuth();renderCloud();renderAll();
+      if(!u.emailVerified){setAdmin(false);return;}
+      adminRef=fb.database().ref('admins/'+emailKey(who.email));
+      adminRef.on('value',s=>setAdmin(s.val()===true),()=>setAdmin(false));
+    });
+    return fb;
+  }).catch(e=>{authP=null;who.loading=false;who.err='登入功能載入失敗（沒有網路，或在預覽環境開啟）。'+(ADM&&ADM.admin?'先沿用這台裝置上次的管理員身分。':'');syncRole();renderAuth();throw e;});
+  return authP;
+}
+function loginErr(e){
+  const c=e&&e.code||'';
+  if(c==='auth/unauthorized-domain')return '這個網址還沒加入 Firebase「已授權網域」，請用 GitHub Pages 網址開啟。';
+  if(c==='auth/operation-not-allowed')return 'Firebase 尚未啟用 Google 登入。';
+  if(c==='auth/network-request-failed')return '沒有網路，無法登入。';
+  if(c==='auth/popup-closed-by-user'||c==='auth/cancelled-popup-request')return '';
+  return '登入失敗：'+(e&&(e.message||c)||e);
+}
+async function googleLogin(){
+  who.busy=true;who.err='';renderAuth();
+  try{
+    const fb=await initAuth();const p=new fb.auth.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});
+    try{await fb.auth().signInWithPopup(p);}
+    catch(e){if(e&&(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment')){await fb.auth().signInWithRedirect(p);return;}throw e;}
+  }catch(e){who.err=loginErr(e);}
+  finally{who.busy=false;renderAuth();}
+}
+async function googleLogout(){
+  try{const fb=await initAuth();await fb.auth().signOut();toast('已登出');}
+  catch(e){ADM=null;saveADM();who.user=null;who.admin=false;syncRole();renderAuth();renderAll();toast('已登出（這台裝置）');}
+}
+async function adminAdd(email){
+  email=String(email||'').trim().toLowerCase();
+  if(!EMAIL_RE.test(email)){toast('請輸入正確的 email');return;}
+  if(email===SUPER_ADMIN){toast('超級管理員不用加入名單');return;}
+  try{const fb=await initAuth();await fb.database().ref('admins/'+emailKey(email)).set(true);toast(`已加入管理員 ${email}`);}
+  catch(e){toast('新增失敗：'+(e.code||e.message));}
+}
+async function adminRemove(email){
+  try{const fb=await initAuth();await fb.database().ref('admins/'+emailKey(email)).remove();toast(`已移除管理員 ${email}`);}
+  catch(e){toast('移除失敗：'+(e.code||e.message));}
+}
+function renderAuth(){
+  $$('.js-auth').forEach(el=>{
+    if(el.contains(document.activeElement)&&document.activeElement.tagName==='INPUT')return;
+    const offline=!who.ready||!who.live;
+    let h='';
+    if(who.user||(!who.ready&&ADM)){
+      const email=who.user?who.email:ADM.email,adm=isAdmin();
+      const chip=who.isSuper?'<span class="chip online">超級管理員</span>':adm?`<span class="chip online">管理員${offline?'（離線沿用）':''}</span>`:who.checked?'<span class="chip offline">不是管理員 · 只能觀看</span>':'<span class="chip connecting">確認身分中</span>';
+      h=`<b>管理員登入</b><span class="who">${esc(email)}</span>${chip}<span style="flex:1"></span><button class="opbtn" type="button" data-auth="out">登出</button>`;
+      if(who.checked&&!adm&&who.user)h+=`<span class="hint">請超級管理員（${SUPER_ADMIN}）把這個 email 加入管理員名單，加入後這裡會自動變成「管理員」。</span>`;
+    }else{
+      h=`<b>管理員登入</b><span class="chip">${who.loading?'載入中':'未登入 · 只能觀看'}</span><span style="flex:1"></span>
+        <button class="opbtn gbtn" type="button" data-auth="in"${who.busy||who.loading?' disabled':''}><span class="g" aria-hidden="true">G</span>${who.busy?'登入中…':'用 Google 登入'}</button>
+        <span class="hint">會動到分數的操作都要用管理員 Google 帳號登入；同一台裝置登入一次就好，之後會自動記住。計分螢幕觀看不用登入。</span>`;
+    }
+    if(who.err)h+=`<div class="err">${esc(who.err)}</div>`;
+    if(who.isSuper){
+      const list=who.list;
+      h+=`<div class="admins"><div class="admins-h">管理員名單 <small>只有超級管理員看得到</small></div>
+        <ul><li><span>${esc(SUPER_ADMIN)}</span><em>超級管理員</em></li>${list?list.map(e=>`<li><span>${esc(e)}</span><button class="opbtn" type="button" data-admin-rm="${esc(e)}">移除</button></li>`).join(''):'<li><span>讀取中…</span></li>'}</ul>
+        <div class="admins-add"><input type="email" data-admin-new placeholder="新增管理員 email" autocomplete="off" aria-label="新增管理員 email"><button class="opbtn" type="button" data-admin-add>新增</button></div></div>`;
+    }
+    el.innerHTML=h;
+  });
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-auth],[data-admin-add],[data-admin-rm]');if(!b)return;
+  if(b.dataset.auth==='in'){googleLogin();return;}
+  if(b.dataset.auth==='out'){googleLogout();return;}
+  if(b.hasAttribute('data-admin-add')){const i=b.parentElement.querySelector('[data-admin-new]');adminAdd(i.value).then(()=>{i.value='';i.blur();renderAuth();});return;}
+  if(b.dataset.adminRm){const em=b.dataset.adminRm;arm(b,'移除','再按一次確認',()=>adminRemove(em));}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches&&e.target.matches('[data-admin-new]')){e.preventDefault();e.target.parentElement.querySelector('[data-admin-add]').click();}});
 
 /* ---------- local, per-device settings ---------- */
 let L={sound:true,voice:true,cloud:null};
@@ -517,9 +649,10 @@ function reduce(S0,type,side,arg,now){
 const undoStack=[];
 function pushUndo(beforeMatch,rev){undoStack.push({before:JSON.stringify(beforeMatch),rev});if(undoStack.length>60)undoStack.shift();}
 function act(type,side,arg){
+  if(!canOperate()){if(type!=='timeup'){toast(lockMsg());if(L.sound)SFX.err();}return;}
   const pre=reduce(state,type,side,arg,srvNow());
   if(!pre.ok){if(pre.toast){toast(pre.toast);if(pre.err&&L.sound)SFX.err();}return;}
-  if(cloud.on&&cloud.readOnly){toast('這台裝置只能觀看，請在上方輸入房間 PIN 連線');return;}
+  if(cloud.on&&cloud.readOnly){toast(lockMsg());return;}
   if(!cloud.on||offlineNow()){
     const before=state.match;state=pre.S;
     if(type==='reset')undoStack.length=0;else if(pre.undo)pushUndo(before,state.match.rev);
@@ -542,6 +675,7 @@ function act(type,side,arg){
   });
 }
 function undo(){
+  if(!canOperate()){toast(lockMsg());return;}
   const top=undoStack[undoStack.length-1];if(!top){toast('沒有可以復原的動作');return;}
   const restore=cur=>{if(!cur||cur.match.rev!==top.rev)return null;const prev=JSON.parse(top.before);
     if(prev.phase==='running'&&cur.match.phase==='running'){prev.endAt=cur.match.endAt;prev.owner=cur.match.owner;}
@@ -567,24 +701,18 @@ const qsRoom=(()=>{try{return (new URLSearchParams(location.search).get('room')|
 function cloudOff(keep){
   if(cloud.db){try{cloud.db.ref('.info/serverTimeOffset').off();cloud.db.ref('.info/connected').off();}catch(e){}}
   if(cloud.ref){try{cloud.ref.off();}catch(e){}}
-  Object.assign(cloud,{on:false,ref:null,status:'off',offset:0});
+  Object.assign(cloud,{on:false,ref:null,status:'off',offset:0,viewer:true});syncRole();
   if(!keep){L.cloud=null;saveL();}
 }
-async function cloudConnect(room,pin,readOnly,silent){
+async function cloudConnect(room,viewer,silent){
   room=String(room||'').trim().toUpperCase();
-  if(!ROOM_RE.test(room))throw new Error('房間代碼要 3–12 個英文字母或數字');
-  if(!readOnly&&!(pin&&pin.length>=4&&pin.length<=12))throw new Error('PIN 要 4–12 個字');
+  if(!ROOM_RE.test(room)){cloud.err='房間代碼要 3–12 個英文字母或數字';cloud.retry=false;renderCloud();throw new Error(cloud.err);}
   cloud.busy=true;cloud.err='';cloud.status='connecting';renderCloud();
   try{
     const fb=await loadFirebase();
-    const cred=await fb.auth().signInAnonymously();const uid=cred.user.uid;const db=fb.database();
-    let created=false;
-    if(!readOnly){
-      try{await db.ref('pins/'+room).set(pin);created=true;}catch(e){}
-      try{await db.ref(`ops/${room}/${uid}`).set(pin);}catch(e){throw new Error('PIN 不正確，無法加入這個房間');}
-    }
+    const db=fb.database();
     cloudOff(true);
-    Object.assign(cloud,{on:true,room,readOnly,db,ref:db.ref(`rooms/${room}/state`),status:'connecting'});
+    Object.assign(cloud,{on:true,room,viewer:!!viewer,db,ref:db.ref(`rooms/${room}/state`),status:'connecting'});syncRole();
     db.ref('.info/serverTimeOffset').on('value',s=>{cloud.offset=s.val()||0;});
     db.ref('.info/connected').on('value',s=>{cloud.status=s.val()?'online':'offline';renderCloud();renderAll();if(s.val())syncPending();});
     let first=true;
@@ -595,10 +723,10 @@ async function cloudConnect(room,pin,readOnly,silent){
       if(first){first=false;lastEv=v.match&&v.match.ev?v.match.ev.id:null;undoStack.length=0;}
       state=normalize(v);save();renderAll();playEv();
     },e=>{cloud.err='讀取失敗：'+e.message;renderCloud();});
-    if(!readOnly||!L.cloud){L.cloud={room,pin:readOnly?'':pin,readOnly};saveL();}
-    if(!silent)toast(readOnly?`已連上房間 ${room}（觀看）`:created?`已建立房間 ${room}`:`已加入房間 ${room}`);
+    if(!viewer||!L.cloud){L.cloud={room,readOnly:!!viewer};saveL();}
+    if(!silent)toast(viewer?`已連上房間 ${room}（觀看）`:isAdmin()?`已連上房間 ${room}，可以操作`:`已連上房間 ${room}；登入管理員帳號後才能操作`);
   }catch(e){
-    cloud.status='off';cloud.err=e.message||String(e);cloud.retry=!/PIN|房間代碼/.test(cloud.err);
+    cloud.status='off';cloud.err=e.message||String(e);cloud.retry=!/房間代碼/.test(cloud.err);
     if(/load|載入|network|fetch/i.test(cloud.err))cloud.err='連不上 Firebase。請確認網路，或改用 GitHub Pages 網址開啟（預覽環境無法連線）。';
     throw e;
   }finally{cloud.busy=false;renderCloud();}
@@ -626,7 +754,7 @@ function renderCloud(){
     const c=el.dataset.cid;
     if(cloud.on){
       const st={online:'已連線',offline:cloud.readOnly?'離線，顯示最後資料':'離線 · 本機記分中',connecting:'連線中'}[cloud.status]||'連線中';
-      el.innerHTML=`<b>雲端房間 ${esc(cloud.room)}</b><span class="chip ${cloud.status}">${st}</span><span class="chip">${cloud.readOnly?'觀看':'可操作'}</span>${pending&&pending.actions.length?`<span class="chip offline">待同步 ${pending.actions.length} 筆</span>`:''}
+      el.innerHTML=`<b>雲端房間 ${esc(cloud.room)}</b><span class="chip ${cloud.status}">${st}</span><span class="chip${cloud.readOnly?'':' online'}">${cloud.viewer?'觀看':cloud.readOnly?'觀看 · 未登入管理員':'可操作'}</span>${pending&&pending.actions.length?`<span class="chip offline">待同步 ${pending.actions.length} 筆</span>`:''}
         <span style="flex:1"></span><button class="opbtn" type="button" data-cloud="off">中斷連線</button>
         <div class="links"><div><span>計分螢幕</span><code>${esc(linkFor('score-screen'))}</code><button type="button" data-copy="score-screen">複製</button></div>
         <div><span>裁判遙控</span><code>${esc(linkFor('control'))}</code><button type="button" data-copy="control">複製</button></div></div>
@@ -637,12 +765,11 @@ function renderCloud(){
         <span style="flex:1"></span><button class="opbtn" type="button" data-cloud="retry"${cloud.busy?' disabled':''}>重新連線</button><button class="opbtn" type="button" data-cloud="off">改用本機模式</button>
         <span class="hint">沒有網路時照常計分，資料先存在這台裝置；網路恢復後會自動連線並上傳。</span>`;
     }else{
-      const room=(L.cloud&&L.cloud.room)||qsRoom||'';
+      const room=(L.cloud&&L.cloud.room)||qsRoom||'MAIN';
       el.innerHTML=`<b>雲端同步</b><span class="chip">本機模式</span>
-        <label for="cr-${c}">房間代碼<input id="cr-${c}" data-cr maxlength="12" value="${esc(room)}" placeholder="例如 HSDS1" autocomplete="off"></label>
-        <label for="cp-${c}">PIN<input id="cp-${c}" data-cp-pin type="password" maxlength="12" placeholder="4–12 字" autocomplete="off"></label>
+        <label for="cr-${c}">房間代碼<input id="cr-${c}" data-cr maxlength="12" value="${esc(room)}" placeholder="MAIN" autocomplete="off"></label>
         <button class="opbtn" type="button" data-cloud="on"${cloud.busy?' disabled':''}>${cloud.busy?'連線中…':'連線'}</button>
-        <span class="hint">輸入新的房間代碼會自動建立房間，第一個連線的人設定 PIN；其他裁判輸入同一組代碼和 PIN 就能一起操作。</span>
+        <span class="hint">一個場地用一個房間代碼（預設 MAIN）。管理員連上同一個房間就能一起操作；新代碼由管理員第一次操作時自動建立。</span>
         ${cloud.err?`<div class="err">${esc(cloud.err)}</div>`:''}`;
     }
   });
@@ -652,16 +779,15 @@ document.addEventListener('click',e=>{
   if(b.dataset.copy){const t=linkFor(b.dataset.copy);const done=()=>toast('已複製連結');
     if(navigator.clipboard)navigator.clipboard.writeText(t).then(done,()=>{const c=b.parentElement.querySelector('code');const r=document.createRange();r.selectNodeContents(c);const s=getSelection();s.removeAllRanges();s.addRange(r);toast('請手動複製已選取的連結');});return;}
   if(b.dataset.cloud==='off'){cloudOff(false);pending=null;savePending();undoStack.length=0;renderCloud();renderAll();toast('已中斷連線，改為本機模式');return;}
-  if(b.dataset.cloud==='retry'){if(L.cloud)cloudConnect(L.cloud.room,L.cloud.pin,false).catch(()=>{});return;}
-  const box=b.closest('.js-cloud');const room=$('[data-cr]',box).value,pin=$('[data-cp-pin]',box).value;
-  cloudConnect(room,pin,false).catch(()=>{});
+  if(b.dataset.cloud==='retry'){if(L.cloud)cloudConnect(L.cloud.room,false).catch(()=>{});return;}
+  const box=b.closest('.js-cloud');cloudConnect($('[data-cr]',box).value,false).catch(()=>{});
 });
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.closest&&e.target.closest('.js-cloud input')){const b=e.target.closest('.js-cloud').querySelector('[data-cloud="on"]');if(b)b.click();}});
 
 /* keep trying to reach the room while the network is down */
-function retryCloud(){if(wantCloud()&&!cloud.on&&!cloud.busy&&cloud.retry!==false&&navigator.onLine!==false)cloudConnect(L.cloud.room,L.cloud.pin,false,true).catch(()=>{});}
+function retryCloud(){if(wantCloud()&&!cloud.on&&!cloud.busy&&cloud.retry!==false&&navigator.onLine!==false)cloudConnect(L.cloud.room,false,true).catch(()=>{});}
 setInterval(retryCloud,15000);
-window.addEventListener('online',()=>setTimeout(retryCloud,800));
+window.addEventListener('online',()=>setTimeout(()=>{retryCloud();if(route!=='score-screen'&&!authP)initAuth().catch(()=>{});},800));
 
 /* ---------- score stage ---------- */
 const stages=[];
@@ -882,7 +1008,10 @@ function setRoute(){
   stages.forEach(s=>ro.unobserve(s.wrap));stages.length=0;
   if(route==='overview')mountStage($('#v-overview .stage-wrap'));
   if(route==='score-screen')mountStage($('#full-wrap'));
-  renderAll();renderGP();renderCloud();
+  if(route!=='score-screen'){initAuth().catch(()=>{});
+    /* a window that was watching as the score screen becomes an operator when it opens a control page */
+    if(cloud.on&&cloud.viewer&&!cloud.busy)cloudConnect(cloud.room,false,true).catch(()=>{});}
+  syncRole();renderAll();renderGP();renderCloud();renderAuth();
 }
 window.addEventListener('hashchange',setRoute);
 $('#full-fs').addEventListener('click',()=>{const el=$('#v-full');try{(document.fullscreenElement?document.exitFullscreen():el.requestFullscreen()).catch(()=>toast('這個視窗不支援全螢幕，可改用瀏覽器的全螢幕功能'));}catch(e){toast('這個視窗不支援全螢幕，可改用瀏覽器的全螢幕功能');}});
@@ -893,7 +1022,7 @@ $('#v-full').addEventListener('click',()=>ac());
 function tick(){
   const m=state.match,now=srvNow(),txt=fmtClock(remaining());
   if(txt!==lastTxt){$$('.js-timer').forEach(e=>e.textContent=txt);lastTxt=txt;}
-  if(m.phase==='running'&&!(cloud.on&&cloud.readOnly)){const raw=m.endAt-now;if((raw<=0&&(m.owner===WIN_ID||!m.owner))||raw<-1500){if(!tick.ending){tick.ending=true;act('timeup');setTimeout(()=>tick.ending=false,1200);}}}
+  if(m.phase==='running'&&canOperate()&&!(cloud.on&&cloud.readOnly)){const raw=m.endAt-now;if((raw<=0&&(m.owner===WIN_ID||!m.owner))||raw<-1500){if(!tick.ending){tick.ending=true;act('timeup');setTimeout(()=>tick.ending=false,1200);}}}
   const f=m.flash,active=!!(f&&now-f.at<2600);
   $$('.banner').forEach(b=>{if(b.classList.contains('show')!==active)b.classList.toggle('show',active);});
   SIDES.forEach(s=>{const hit=now-(m.ringFlash[s]||0)<3000;$$(`.ring[data-side="${s}"]`).forEach(r=>{r.classList.toggle('on',m.led==='white');r.classList.toggle('hit',hit);});});
@@ -905,8 +1034,9 @@ requestAnimationFrame(tick);
 /* reconnect: a ?room= link opens the room (watch only on the score screen); otherwise reuse this device's last room */
 (()=>{
   const saved=L.cloud;
-  if(route==='score-screen'&&(qsRoom||(saved&&saved.room))){cloudConnect(qsRoom||saved.room,'',true,true).catch(()=>{});return;}
-  if(saved&&saved.room&&(!qsRoom||qsRoom===saved.room)&&(saved.readOnly||saved.pin))cloudConnect(saved.room,saved.pin,!!saved.readOnly,true).catch(()=>{});
+  if(route==='score-screen'&&(qsRoom||(saved&&saved.room))){cloudConnect(qsRoom||saved.room,true,true).catch(()=>{});return;}
+  const r=qsRoom||(saved&&saved.room);
+  if(r)cloudConnect(r,false,true).catch(()=>{});
 })();
 })();
 </script>

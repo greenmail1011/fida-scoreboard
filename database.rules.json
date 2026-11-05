@@ -1,0 +1,20 @@
+{
+  "rules": {
+    "rooms": {
+      "$room": {
+        "state": {
+          ".read": true,
+          ".write": "$room.matches(/^[A-Z0-9]{3,12}$/) && auth != null && auth.token.email != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'dronex666666@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)"
+        }
+      }
+    },
+    "admins": {
+      ".read": "auth != null && auth.token.email != null && auth.token.email_verified == true && auth.token.email.toLowerCase() == 'dronex666666@gmail.com'",
+      ".write": "auth != null && auth.token.email != null && auth.token.email_verified == true && auth.token.email.toLowerCase() == 'dronex666666@gmail.com'",
+      "$email": {
+        ".read": "auth != null && auth.token.email != null && auth.token.email.toLowerCase().replace('.', ',') == $email",
+        ".validate": "newData.isBoolean() && newData.val() == true"
+      }
+    }
+  }
+}
