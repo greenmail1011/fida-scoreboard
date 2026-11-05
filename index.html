@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="新竹市無人機創新科技協會 無人機足球計分系統：LED 計分螢幕、計時、犯規燈、裁判遙控器，支援電腦、鍵盤與 PS4 手把操作。">
+<meta name="description" content="新竹市無人機創新科技協會 無人機足球計分系統：LED 計分螢幕、計時、犯規燈、裁判遙控器，支援電腦、鍵盤、PS4 手把與 Firebase 多裝置同步。">
 <link rel="icon" href="logo.png">
 <title>無人機足球經賽營運系統</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -172,6 +172,24 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
 .ps{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;margin-right:2px;border-radius:11px;background:#202634;border:1px solid #3a4253;font:700 11px var(--f-ui);color:#fff}
 .ps.tri{color:#3ddc97}.ps.cir{color:#ff6b6b}.ps.crs{color:#7aa7ff}.ps.sq{color:#ff8ad8}
 
+/* ---------- cloud room ---------- */
+.cloud{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.cloud b{font-size:13px;font-weight:900;letter-spacing:.04em}
+.cloud label{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;font-weight:700}
+.cloud input{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:5px 8px;color:var(--fg);font:700 13px var(--f-clock);width:8.5em;text-transform:uppercase;letter-spacing:.08em}
+.cloud input[type=password]{text-transform:none}
+.cloud .hint{color:var(--muted);font-size:12px;flex-basis:100%}
+.cloud .err{color:#ff8a80;font-size:12px;font-weight:700;flex-basis:100%}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-weight:900;font-size:12px;white-space:nowrap;background:#222836;color:var(--muted)}
+.chip::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.chip.online{color:var(--ok);background:rgba(60,207,122,.12)}
+.chip.offline,.chip.connecting{color:var(--amber);background:rgba(242,180,60,.12)}
+.links{display:flex;flex-direction:column;gap:4px;flex-basis:100%;font-size:12px;min-width:0}
+.links div{display:flex;align-items:center;gap:8px;min-width:0}
+.links span{color:var(--muted);white-space:nowrap}
+.links code{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 12px ui-monospace,monospace;color:#cfe0ff;background:#0f1218;border:1px solid var(--line);border-radius:5px;padding:3px 6px;user-select:all}
+.links button{padding:3px 8px;border-radius:5px;border:1px solid var(--line);background:var(--panel-2);font-size:12px;font-weight:700}
+
 /* ---------- toast ---------- */
 .toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);max-width:calc(100% - 32px);background:#1f2532;border:1px solid #3a4253;color:#fff;padding:10px 16px;border-radius:10px;font-weight:700;opacity:0;pointer-events:none;transition:.2s;z-index:50}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -236,6 +254,7 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
 
 <!-- ================= OVERVIEW ================= -->
 <section id="v-overview" class="wrap">
+  <div class="cloud js-cloud" data-cid="ov"></div>
   <div class="opbar">
     <span class="pill js-phase" data-phase="setup">賽前準備</span>
     <label class="oplabel r" for="name-red">紅隊<input id="name-red" data-name="red" autocomplete="off"></label>
@@ -250,8 +269,8 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
     </label>
     <button class="opbtn" id="op-pause" type="button">暫停</button>
     <button class="opbtn js-undo" type="button">復原上一步</button>
-    <label class="toggle" for="op-sound"><input type="checkbox" id="op-sound" checked>音效</label>
-    <label class="toggle" for="op-voice"><input type="checkbox" id="op-voice" checked>語音</label>
+    <label class="toggle" for="op-sound"><input type="checkbox" id="op-sound" checked>本機音效</label>
+    <label class="toggle" for="op-voice"><input type="checkbox" id="op-voice" checked>本機語音</label>
     <span class="sep"></span>
     <button class="opbtn danger" id="op-reset" type="button">重置比賽</button>
   </div>
@@ -295,7 +314,7 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
         <tr><td>紅隊副審</td><td><kbd>Q</kbd> 得分　<kbd>W</kbd> 得分−1　<kbd>A</kbd> 防守犯規　<kbd>S</kbd> 犯規−1　<kbd>D</kbd> 進攻犯規</td></tr>
         <tr><td>藍隊副審</td><td><kbd>U</kbd> 得分　<kbd>I</kbd> 得分−1　<kbd>J</kbd> 防守犯規　<kbd>K</kbd> 犯規−1　<kbd>L</kbd> 進攻犯規</td></tr>
       </table>
-      <p class="note">接外接螢幕：在本頁網址最後加上 <kbd>#score-screen</kbd> 另開一個分頁，拖到螢幕上全螢幕，同一台電腦會即時同步。</p>
+      <p class="note">接外接螢幕：同一台電腦按「在新分頁全螢幕開啟」即可。連上雲端房間後，其他電腦、平板、手機用上方的連結開啟，就能當計分螢幕或裁判遙控器。</p>
     </section>
   </div>
   <section class="box" style="margin-top:18px"><h3>遊戲搖桿 PS4 · PS5 · Xbox</h3><div class="js-gp"></div></section>
@@ -303,6 +322,7 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
 
 <!-- ================= COMPUTER CONTROL ================= -->
 <section id="v-control" class="wrap" hidden>
+  <div class="cloud js-cloud" data-cid="cp"></div>
   <div class="cp-status">
     <div class="cp-team r"><span class="cp-score" id="cp-score-red">0</span><div><h2 id="cp-name-red"></h2><span class="cp-foul" id="cp-foul-red"></span></div></div>
     <div class="cp-clock"><b class="js-timer">03:00:00</b><span class="pill js-phase" data-phase="setup">賽前準備</span></div>
@@ -344,34 +364,56 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad=n=>String(n).padStart(2,'0');
-const WIN_ID=Math.random().toString(36).slice(2,10);
+const rid=()=>Math.random().toString(36).slice(2,10);
+const WIN_ID=rid();
 const SIDES=['red','blue'], OPP={red:'blue',blue:'red'}, SIDE_ZH={red:'紅隊',blue:'藍隊'};
 
-/* ---------- state ---------- */
-function newMatch(s){return {phase:'setup',remaining:s.cfg.duration*1000,endAt:null,owner:null,score:{red:0,blue:0},fouls:{red:0,blue:0},led:'off',ringFlash:{red:0,blue:0},flash:null,log:[]};}
-function defaultState(){const s={v:2,cfg:{duration:180,sound:true,voice:true},teams:{red:{name:'新竹飛鷹'},blue:{name:'台中雷霆'}},match:null};s.match=newMatch(s);return s;}
-const STORE='fida-ds-score-v2';
+/* ---------- Firebase (Realtime Database) ---------- */
+const FB_CONFIG={apiKey:"AIzaSyC1T7NmYrdB6LAh7BI_k7BfWVp3hkD7xiE",authDomain:"fida-scoreboard.firebaseapp.com",databaseURL:"https://fida-scoreboard-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"fida-scoreboard",storageBucket:"fida-scoreboard.firebasestorage.app",messagingSenderId:"185351819496",appId:"1:185351819496:web:fec7f327bcbc6929af395d"};
+const FB_BASE='https://cdn.jsdelivr.net/npm/firebase@10.14.1/';
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('無法載入 Firebase 程式庫'));document.head.appendChild(s);});}
+let fbP=null;
+function loadFirebase(){if(!fbP)fbP=(async()=>{await loadScript(FB_BASE+'firebase-app-compat.js');await Promise.all([loadScript(FB_BASE+'firebase-auth-compat.js'),loadScript(FB_BASE+'firebase-database-compat.js')]);if(!firebase.apps.length)firebase.initializeApp(FB_CONFIG);return firebase;})().catch(e=>{fbP=null;throw e;});return fbP;}
+const cloud={on:false,room:null,readOnly:true,db:null,ref:null,status:'off',offset:0,err:'',busy:false};
+const srvNow=()=>Date.now()+(cloud.on?cloud.offset:0);
+
+/* ---------- local, per-device settings ---------- */
+let L={sound:true,voice:true,cloud:null};
+try{L=Object.assign(L,JSON.parse(localStorage.getItem('fida-local-v1')||'{}'));}catch(e){}
+function saveL(){try{localStorage.setItem('fida-local-v1',JSON.stringify(L));}catch(e){}}
+
+/* ---------- shared state: teams, duration, match ---------- */
+function newMatch(S,rev){return {phase:'setup',remaining:S.cfg.duration*1000,endAt:0,owner:'',score:{red:0,blue:0},fouls:{red:0,blue:0},led:'off',ringFlash:{red:0,blue:0},flash:null,ev:null,log:[],rev:rev||0};}
+function defaultState(){const S={v:3,cfg:{duration:180},teams:{red:{name:'新竹飛鷹'},blue:{name:'台中雷霆'}},match:null};S.match=newMatch(S);return S;}
+function normalize(v){
+  const S=v&&typeof v==='object'?v:defaultState();
+  S.v=3;S.cfg=Object.assign({duration:180},S.cfg||{});
+  S.teams=S.teams||{};SIDES.forEach(s=>{S.teams[s]=Object.assign({name:SIDE_ZH[s]},S.teams[s]||{});});
+  const m=S.match=Object.assign(newMatch(S),S.match||{});
+  m.score=Object.assign({red:0,blue:0},m.score||{});m.fouls=Object.assign({red:0,blue:0},m.fouls||{});m.ringFlash=Object.assign({red:0,blue:0},m.ringFlash||{});
+  m.log=Array.isArray(m.log)?m.log.filter(Boolean):(m.log?Object.keys(m.log).sort((a,b)=>a-b).map(k=>m.log[k]):[]);
+  m.flash=m.flash||null;m.ev=m.ev||null;m.rev=m.rev||0;
+  return S;
+}
+const STORE='fida-ds-score-v3';
 let state;
-try{const raw=localStorage.getItem(STORE);state=raw?JSON.parse(raw):null;}catch(e){state=null;}
-if(!state||state.v!==2||!state.match)state=defaultState();
+try{state=normalize(JSON.parse(localStorage.getItem(STORE)||'null'));}catch(e){state=defaultState();}
 let saveT=null;
 function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(STORE,JSON.stringify(state));}catch(e){}},200);}
 let bc=null;try{bc=new BroadcastChannel('fida-ds-score');}catch(e){}
 const peers={};
-function broadcast(){if(bc){try{bc.postMessage({from:WIN_ID,state});}catch(e){}}}
-if(bc)bc.onmessage=ev=>{const d=ev.data;if(!d||d.from===WIN_ID)return;if(d.hb){peers[d.from]=Object.assign({t:Date.now()},d.hb);return;}state=d.state;save();renderAll();};
-function commit(){save();broadcast();renderAll();}
+if(bc)bc.onmessage=ev=>{const d=ev.data;if(!d||d.from===WIN_ID)return;
+  if(d.hb){peers[d.from]=Object.assign({t:Date.now()},d.hb);return;}
+  if(d.state&&!cloud.on){state=normalize(d.state);save();renderAll();playEv();}};
+function commitLocal(){save();if(bc&&!cloud.on){try{bc.postMessage({from:WIN_ID,state});}catch(e){}}renderAll();playEv();}
 
 /* ---------- helpers ---------- */
-const tname=s=>state.teams[s].name||SIDE_ZH[s];
-function remaining(){const m=state.match;return Math.max(0,m.phase==='running'?m.endAt-Date.now():m.remaining);}
+const tname=(S,s)=>(S.teams[s]&&S.teams[s].name)||SIDE_ZH[s];
+const remOf=(m,now)=>Math.max(0,m.phase==='running'?m.endAt-now:m.remaining);
+const remaining=()=>remOf(state.match,srvNow());
 function fmtClock(ms){const cs=Math.floor(ms/10);return pad(Math.floor(cs/6000))+':'+pad(Math.floor(cs/100)%60)+':'+pad(cs%100);}
-function gameTime(){if(state.match.phase==='setup')return'賽前';const s=Math.floor((state.cfg.duration*1000-remaining())/1000);return pad(Math.floor(s/60))+':'+pad(s%60);}
-function log(side,text){const L=state.match.log;L.unshift({t:gameTime(),side,text});if(L.length>100)L.length=100;}
-function flash(type,team,title,sub){state.match.flash={type,team,title,sub,at:Date.now()};}
 let toastT=null;
-function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);}
-/* two-step confirm: first press arms the button, second press within 2.5 s runs fn */
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2400);}
 function setLabel(btn,t){if(!t)return;const n=btn.firstChild;if(n&&n.nodeType===3&&btn.querySelector('small'))n.textContent=t;else if(!btn.querySelector('i,small'))btn.textContent=t;}
 function arm(btn,label,armedLabel,fn){
   if(btn.dataset.armed!=='1'){btn.dataset.armed='1';btn.classList.add('armed');setLabel(btn,armedLabel);clearTimeout(btn._t);
@@ -395,54 +437,114 @@ const SFX={
   reset(){tone(600,0,.1);tone(400,.12,.18);},
   err(){tone(160,0,.18,'square',.1);},
 };
-function sfx(n){if(state.cfg.sound&&SFX[n])SFX[n]();}
-function say(text,delay=0){if(!state.cfg.voice||!('speechSynthesis' in window))return;setTimeout(()=>{try{const u=new SpeechSynthesisUtterance(text);u.lang='zh-TW';u.rate=1.05;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}},delay);}
+function say(text,delay){if(!L.voice||!text||!('speechSynthesis' in window))return;setTimeout(()=>{try{const u=new SpeechSynthesisUtterance(text);u.lang='zh-TW';u.rate=1.05;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}},delay||0);}
+/* within one browser only one window plays the shared sounds: a score screen first, then the window in use */
+function hasFocus(){try{return document.hasFocus();}catch(e){return false;}}
+function soundLeader(){
+  if(!L.sound)return false;
+  const now=Date.now(),alive=Object.entries(peers).filter(([,p])=>now-p.t<2500&&p.snd);
+  if(route==='score-screen')return !alive.some(([id,p])=>p.scr&&id<WIN_ID);
+  if(alive.some(([,p])=>p.scr))return false;
+  if(hasFocus())return true;
+  if(alive.some(([,p])=>p.ctrl&&p.focus))return false;
+  return !alive.some(([id,p])=>p.ctrl&&id<WIN_ID);
+}
+let lastEv=state.match.ev?state.match.ev.id:null;
+function playEv(){
+  const e=state.match.ev;if(!e||e.id===lastEv)return;lastEv=e.id;
+  if(srvNow()-(e.at||0)>5000||!soundLeader())return;
+  (e.sfx||[]).forEach(n=>SFX[n]&&SFX[n]());
+  if(e.say)say(e.say,e.sayDelay||450);
+}
+
+/* ---------- reducer: the same rules run locally and inside cloud transactions ---------- */
+function reduce(S0,type,side,arg,now){
+  const S=normalize(JSON.parse(JSON.stringify(S0))),m=S.match,live=m.phase==='running'||m.phase==='paused';
+  const out={ok:false,S,toast:null,err:false,undo:true};
+  const fail=(msg,err)=>{out.toast=msg;out.err=!!err;return out;};
+  const gt=()=>{if(m.phase==='setup')return'賽前';const s=Math.floor((S.cfg.duration*1000-remOf(m,now))/1000);return pad(Math.floor(s/60))+':'+pad(s%60);};
+  const log=(sd,text)=>{m.log.unshift({t:gt(),side:sd||'',text});if(m.log.length>100)m.log.length=100;};
+  const ev=(sfx,sayText,sayDelay)=>{m.ev={id:rid(),sfx,say:sayText||'',sayDelay:sayDelay||0,at:now};};
+  const flash=(t,team,title,sub)=>{m.flash={type:t,team:team||'',title,sub:sub||'',at:now};};
+  const tn=side?tname(S,side):'';
+  switch(type){
+    case 'start':
+      if(m.phase==='setup'){m.phase='running';m.endAt=now+m.remaining;m.owner=WIN_ID;m.led='white';flash('start','','START','比賽開始');log('', '比賽開始，球門 LED 亮起');ev(['start']);break;}
+      if(m.phase==='paused'){m.phase='running';m.endAt=now+m.remaining;m.owner=WIN_ID;log('','比賽繼續');ev(['resume']);break;}
+      if(m.phase==='running')return fail('比賽進行中');
+      return fail('比賽已結束，請按 RESET 重置',true);
+    case 'pause':
+      if(m.phase==='running'){m.remaining=remOf(m,now);m.phase='paused';log('','比賽暫停');ev(['click']);break;}
+      if(m.phase==='paused')return reduce(S0,'start',side,arg,now);
+      return fail('比賽沒有在進行');
+    case 'timeup':
+      if(m.phase!=='running'||m.endAt>now)return out;
+    // falls through
+    case 'end':
+      if(live){m.remaining=type==='timeup'?0:remOf(m,now);m.phase='ended';const r=m.score.red,b=m.score.blue;
+        flash('end','','GAME OVER',`${tname(S,'red')} ${r} : ${b} ${tname(S,'blue')}`);log('',`${type==='timeup'?'時間到，':''}比賽結束 ${r}:${b}`);
+        ev(['end'],`比賽結束，${tname(S,'red')}${r}比${b}${tname(S,'blue')}`,2000);break;}
+      if(m.phase==='ended'){m.phase='off';m.led='off';log('','主審關閉球門 LED');ev(['click']);break;}
+      if(m.phase==='off')return fail('請按 RESET 重置，準備下一場');
+      return fail('比賽尚未開始');
+    case 'goal':case 'goalUndo':case 'defFoul':case 'foulDown':case 'atkFoul':
+      if(!live)return fail('比賽進行中才能記錄',true);
+      if(type==='goal'){m.score[side]=Math.min(99,m.score[side]+1);m.ringFlash[side]=now;flash('goal',side,'GOAL!',`${tn} 得分`);log(side,`${tn} 得分 → ${m.score.red}:${m.score.blue}`);ev(['goal_'+side]);}
+      if(type==='goalUndo'){if(!m.score[side])return fail(`${tn} 目前沒有得分`);m.score[side]--;log(side,`${tn} 得分修正 → ${m.score.red}:${m.score.blue}`);ev(['click']);}
+      if(type==='defFoul'){m.fouls[side]++;flash('foul',side,'FOUL',`${tn} 防守犯規`);log(side,`${tn} 防守犯規（第 ${m.fouls[side]} 次）`);ev(['foul_'+side]);}
+      if(type==='foulDown'){if(!m.fouls[side])return fail(`${tn} 目前沒有犯規`);m.fouls[side]--;log(side,`${tn} 犯規修正（${m.fouls[side]} 次）`);ev(['click']);}
+      if(type==='atkFoul'){const o=OPP[side],on=tname(S,o);m.fouls[o]++;flash('foul',o,'FOUL',`${on} 進攻犯規`);log(o,`${on} 進攻犯規（第 ${m.fouls[o]} 次）`);ev(['foul_'+o]);}
+      break;
+    case 'reset':{
+      const nm=newMatch(S,m.rev);nm.log=[{t:'賽前',side:'',text:'系統已重置，準備下一場'}];nm.ev={id:rid(),sfx:['reset'],say:'',at:now};S.match=nm;out.undo=false;out.toast='已重置，準備下一場';break;}
+    case 'duration':
+      if(m.phase!=='setup')return fail('比賽開始後不能改時間');
+      S.cfg.duration=arg;m.remaining=arg*1000;out.undo=false;break;
+    case 'name':
+      S.teams[side].name=arg;out.undo=false;break;
+    default:return out;
+  }
+  S.match.rev=(m.rev||0)+1;out.ok=true;return out;
+}
 
 /* ---------- actions ---------- */
 const undoStack=[];
+function pushUndo(beforeMatch,rev){undoStack.push({before:JSON.stringify(beforeMatch),rev});if(undoStack.length>60)undoStack.shift();}
 function act(type,side,arg){
-  const m=state.match,before=JSON.stringify(m),live=m.phase==='running'||m.phase==='paused';
-  let ok=false;
-  switch(type){
-    case 'start':
-      if(m.phase==='setup'){m.phase='running';m.endAt=Date.now()+m.remaining;m.owner=WIN_ID;m.led='white';flash('start',null,'START','比賽開始');log(null,'比賽開始，球門 LED 亮起');sfx('start');ok=true;}
-      else if(m.phase==='paused'){m.phase='running';m.endAt=Date.now()+m.remaining;m.owner=WIN_ID;log(null,'比賽繼續');sfx('resume');ok=true;}
-      else if(m.phase==='running'){toast('比賽進行中');return;}
-      else{toast('比賽已結束，請按 RESET 重置');sfx('err');return;}
-      break;
-    case 'pause':
-      if(m.phase==='running'){m.remaining=remaining();m.endAt=null;m.phase='paused';log(null,'比賽暫停');sfx('click');ok=true;}
-      else if(m.phase==='paused')return act('start');
-      else return;
-      break;
-    case 'end':
-      if(live){m.remaining=remaining();m.endAt=null;m.phase='ended';const r=m.score.red,b=m.score.blue;
-        flash('end',null,'GAME OVER',`${tname('red')} ${r} : ${b} ${tname('blue')}`);log(null,`${arg&&arg.auto?'時間到，':''}比賽結束 ${r}:${b}`);sfx('end');
-        say(`比賽結束，${tname('red')}${r}比${b}${tname('blue')}`,2000);
-        if(arg&&arg.auto)gpRumbleMain(900);ok=true;}
-      else if(m.phase==='ended'){m.phase='off';m.led='off';log(null,'主審關閉球門 LED');sfx('click');ok=true;}
-      else if(m.phase==='off'){toast('請按 RESET 重置，準備下一場');return;}
-      else{toast('比賽尚未開始');return;}
-      break;
-    case 'goal':case 'goalUndo':case 'defFoul':case 'foulDown':case 'atkFoul':{
-      if(!live){toast('比賽進行中才能記錄');sfx('err');return;}
-      const tn=tname(side);
-      if(type==='goal'){m.score[side]=Math.min(99,m.score[side]+1);m.ringFlash[side]=Date.now();flash('goal',side,'GOAL!',`${tn} 得分`);log(side,`${tn} 得分 → ${m.score.red}:${m.score.blue}`);sfx('goal_'+side);}
-      if(type==='goalUndo'){if(!m.score[side])return;m.score[side]--;log(side,`${tn} 得分修正 → ${m.score.red}:${m.score.blue}`);sfx('click');}
-      if(type==='defFoul'){m.fouls[side]++;flash('foul',side,'FOUL',`${tn} 防守犯規`);log(side,`${tn} 防守犯規（第 ${m.fouls[side]} 次）`);sfx('foul_'+side);}
-      if(type==='foulDown'){if(!m.fouls[side])return;m.fouls[side]--;log(side,`${tn} 犯規修正（${m.fouls[side]} 次）`);sfx('click');}
-      if(type==='atkFoul'){const o=OPP[side],on=tname(o);m.fouls[o]++;flash('foul',o,'FOUL',`${on} 進攻犯規`);log(o,`${on} 進攻犯規（第 ${m.fouls[o]} 次）`);sfx('foul_'+o);}
-      ok=true;break;}
-    case 'reset':
-      state.match=newMatch(state);state.match.log=[{t:'賽前',side:null,text:'系統已重置，準備下一場'}];undoStack.length=0;sfx('reset');commit();toast('已重置，準備下一場');return;
+  const pre=reduce(state,type,side,arg,srvNow());
+  if(!pre.ok){if(pre.toast){toast(pre.toast);if(pre.err&&L.sound)SFX.err();}return;}
+  if(cloud.on&&cloud.readOnly){toast('這台裝置只能觀看，請在上方輸入房間 PIN 連線');return;}
+  if(!cloud.on){
+    const before=state.match;state=pre.S;
+    if(type==='reset')undoStack.length=0;else if(pre.undo)pushUndo(before,state.match.rev);
+    if(pre.toast)toast(pre.toast);
+    if(type==='timeup')gpRumbleMain(900);
+    commitLocal();return;
   }
-  if(ok){undoStack.push(before);if(undoStack.length>60)undoStack.shift();commit();}
+  let applied=null,before=null;
+  cloud.ref.transaction(cur=>{
+    const base=cur?normalize(cur):state;const r=reduce(base,type,side,arg,srvNow());
+    if(!r.ok){applied=null;return;}applied=r;before=base.match;return r.S;
+  },(err,committed)=>{
+    if(err){toast('同步失敗：'+(err.code||err.message));return;}
+    if(!committed||!applied)return;
+    if(type==='reset')undoStack.length=0;else if(applied.undo)pushUndo(before,applied.S.match.rev);
+    if(applied.toast)toast(applied.toast);
+    if(type==='timeup')gpRumbleMain(900);
+    renderAll();
+  });
 }
 function undo(){
-  const snap=undoStack.pop();if(!snap){toast('沒有可以復原的動作');return;}
-  const prev=JSON.parse(snap),cur=state.match;
-  if(prev.phase==='running'&&cur.phase==='running'){prev.endAt=cur.endAt;prev.owner=cur.owner;}
-  prev.flash=null;state.match=prev;commit();toast('已復原上一步');
+  const top=undoStack[undoStack.length-1];if(!top){toast('沒有可以復原的動作');return;}
+  const restore=cur=>{if(!cur||cur.match.rev!==top.rev)return null;const prev=JSON.parse(top.before);
+    if(prev.phase==='running'&&cur.match.phase==='running'){prev.endAt=cur.match.endAt;prev.owner=cur.match.owner;}
+    prev.flash=null;prev.ev=cur.match.ev;const S=JSON.parse(JSON.stringify(cur));S.match=prev;return S;};
+  if(!cloud.on){const S=restore(state);if(!S){toast('狀態已改變，無法復原，請改用 −1 修正');undoStack.length=0;renderAll();return;}
+    undoStack.pop();state=normalize(S);commitLocal();toast('已復原上一步');return;}
+  if(cloud.readOnly)return;
+  let ok=false;
+  cloud.ref.transaction(cur=>{const S=restore(cur?normalize(cur):null);ok=!!S;return S||undefined;},(err,committed)=>{
+    if(committed&&ok){undoStack.pop();toast('已復原上一步');}else{undoStack.length=0;toast('其他裁判已更新比分，無法復原，請改用 −1 修正');}renderAll();});
 }
 /* reset combo: the two halves (Z+X keys, L1+R1 on a gamepad) within 450 ms */
 let comboT=null,comboKey=null;
@@ -450,6 +552,80 @@ function comboPress(k){
   if(comboT&&comboKey!==k){clearTimeout(comboT);comboT=null;comboKey=null;act('reset');return;}
   comboKey=k;clearTimeout(comboT);comboT=setTimeout(()=>{comboT=null;comboKey=null;},450);
 }
+
+/* ---------- cloud room ---------- */
+const ROOM_RE=/^[A-Z0-9]{3,12}$/;
+const qsRoom=(()=>{try{return (new URLSearchParams(location.search).get('room')||'').toUpperCase();}catch(e){return '';}})();
+function cloudOff(keep){
+  if(cloud.db){try{cloud.db.ref('.info/serverTimeOffset').off();cloud.db.ref('.info/connected').off();}catch(e){}}
+  if(cloud.ref){try{cloud.ref.off();}catch(e){}}
+  Object.assign(cloud,{on:false,ref:null,status:'off',offset:0});
+  if(!keep){L.cloud=null;saveL();}
+}
+async function cloudConnect(room,pin,readOnly,silent){
+  room=String(room||'').trim().toUpperCase();
+  if(!ROOM_RE.test(room))throw new Error('房間代碼要 3–12 個英文字母或數字');
+  if(!readOnly&&!(pin&&pin.length>=4&&pin.length<=12))throw new Error('PIN 要 4–12 個字');
+  cloud.busy=true;cloud.err='';cloud.status='connecting';renderCloud();
+  try{
+    const fb=await loadFirebase();
+    const cred=await fb.auth().signInAnonymously();const uid=cred.user.uid;const db=fb.database();
+    let created=false;
+    if(!readOnly){
+      try{await db.ref('pins/'+room).set(pin);created=true;}catch(e){}
+      try{await db.ref(`ops/${room}/${uid}`).set(pin);}catch(e){throw new Error('PIN 不正確，無法加入這個房間');}
+    }
+    cloudOff(true);
+    Object.assign(cloud,{on:true,room,readOnly,db,ref:db.ref(`rooms/${room}/state`),status:'connecting'});
+    db.ref('.info/serverTimeOffset').on('value',s=>{cloud.offset=s.val()||0;});
+    db.ref('.info/connected').on('value',s=>{cloud.status=s.val()?'online':'offline';renderCloud();});
+    let first=true;
+    cloud.ref.on('value',snap=>{
+      const v=snap.val();
+      if(!v){if(!cloud.readOnly&&first){first=false;cloud.ref.set(JSON.parse(JSON.stringify(state))).catch(e=>{cloud.err='建立房間資料失敗：'+e.message;renderCloud();});}return;}
+      if(first){first=false;lastEv=v.match&&v.match.ev?v.match.ev.id:null;undoStack.length=0;}
+      state=normalize(v);save();renderAll();playEv();
+    },e=>{cloud.err='讀取失敗：'+e.message;renderCloud();});
+    if(!readOnly||!L.cloud){L.cloud={room,pin:readOnly?'':pin,readOnly};saveL();}
+    if(!silent)toast(readOnly?`已連上房間 ${room}（觀看）`:created?`已建立房間 ${room}`:`已加入房間 ${room}`);
+  }catch(e){
+    cloud.status='off';cloud.err=e.message||String(e);
+    if(/load|載入|network|fetch/i.test(cloud.err))cloud.err='連不上 Firebase。請確認網路，或改用 GitHub Pages 網址開啟（預覽環境無法連線）。';
+    throw e;
+  }finally{cloud.busy=false;renderCloud();}
+}
+function linkFor(view){let base;try{base=location.origin+location.pathname;}catch(e){base='';}return `${base}?room=${encodeURIComponent(cloud.room||'')}#${view}`;}
+function renderCloud(){
+  $$('.js-cloud').forEach(el=>{
+    if(el.contains(document.activeElement)&&!cloud.on)return;
+    const c=el.dataset.cid;
+    if(cloud.on){
+      const st={online:'已連線',offline:'離線，重新連線中',connecting:'連線中'}[cloud.status]||'連線中';
+      el.innerHTML=`<b>雲端房間 ${esc(cloud.room)}</b><span class="chip ${cloud.status}">${st}</span><span class="chip">${cloud.readOnly?'觀看':'可操作'}</span>
+        <span style="flex:1"></span><button class="opbtn" type="button" data-cloud="off">中斷連線</button>
+        <div class="links"><div><span>計分螢幕</span><code>${esc(linkFor('score-screen'))}</code><button type="button" data-copy="score-screen">複製</button></div>
+        <div><span>裁判遙控</span><code>${esc(linkFor('control'))}</code><button type="button" data-copy="control">複製</button></div></div>
+        ${cloud.err?`<div class="err">${esc(cloud.err)}</div>`:''}`;
+    }else{
+      const room=(L.cloud&&L.cloud.room)||qsRoom||'';
+      el.innerHTML=`<b>雲端同步</b><span class="chip">本機模式</span>
+        <label for="cr-${c}">房間代碼<input id="cr-${c}" data-cr maxlength="12" value="${esc(room)}" placeholder="例如 HSDS1" autocomplete="off"></label>
+        <label for="cp-${c}">PIN<input id="cp-${c}" data-cp-pin type="password" maxlength="12" placeholder="4–12 字" autocomplete="off"></label>
+        <button class="opbtn" type="button" data-cloud="on"${cloud.busy?' disabled':''}>${cloud.busy?'連線中…':'連線'}</button>
+        <span class="hint">輸入新的房間代碼會自動建立房間，第一個連線的人設定 PIN；其他裁判輸入同一組代碼和 PIN 就能一起操作。</span>
+        ${cloud.err?`<div class="err">${esc(cloud.err)}</div>`:''}`;
+    }
+  });
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-cloud],[data-copy]');if(!b)return;
+  if(b.dataset.copy){const t=linkFor(b.dataset.copy);const done=()=>toast('已複製連結');
+    if(navigator.clipboard)navigator.clipboard.writeText(t).then(done,()=>{const c=b.parentElement.querySelector('code');const r=document.createRange();r.selectNodeContents(c);const s=getSelection();s.removeAllRanges();s.addRange(r);toast('請手動複製已選取的連結');});return;}
+  if(b.dataset.cloud==='off'){cloudOff(false);undoStack.length=0;renderCloud();renderAll();toast('已中斷連線，改為本機模式');return;}
+  const box=b.closest('.js-cloud');const room=$('[data-cr]',box).value,pin=$('[data-cp-pin]',box).value;
+  cloudConnect(room,pin,false).catch(()=>{});
+});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.closest&&e.target.closest('.js-cloud input')){const b=e.target.closest('.js-cloud').querySelector('[data-cloud="on"]');if(b)b.click();}});
 
 /* ---------- score stage ---------- */
 const stages=[];
@@ -476,18 +652,17 @@ function digitCells(d,co,r0,set){const W=11,H=22,T=2,M=10,s=SEG[d];const add=(c0
   if(s.includes('f'))add(0,T-1,0,M+T-1);if(s.includes('e'))add(0,T-1,M,H-1);if(s.includes('b'))add(W-T,W-1,0,M+T-1);if(s.includes('c'))add(W-T,W-1,M,H-1);}
 function drawLED(cv,l,r){
   const g=cv.getContext('2d'),COLS=70,ROWS=26,C=20;g.clearRect(0,0,cv.width,cv.height);
-  const on=new Set(),L=pad(l),R=pad(r);
-  digitCells(+L[0],4,2,on);digitCells(+L[1],18,2,on);digitCells(+R[0],41,2,on);digitCells(+R[1],55,2,on);
+  const on=new Set(),Ls=pad(l),R=pad(r);
+  digitCells(+Ls[0],4,2,on);digitCells(+Ls[1],18,2,on);digitCells(+R[0],41,2,on);digitCells(+R[1],55,2,on);
   [8,17].forEach(rw=>[[34,rw-1],[35,rw-1],[33,rw],[34,rw],[35,rw],[36,rw],[34,rw+1],[35,rw+1]].forEach(([c,y])=>on.add(c+','+y)));
   g.fillStyle='#231f38';for(let c=0;c<COLS;c++)for(let y=0;y<ROWS;y++){if(on.has(c+','+y))continue;g.beginPath();g.arc(c*C+10,y*C+10,6.2,0,7);g.fill();}
   g.fillStyle='#f6f4ff';g.shadowColor='rgba(225,215,255,.95)';g.shadowBlur=12;
   on.forEach(k=>{const[c,y]=k.split(',').map(Number);g.beginPath();g.arc(c*C+10,y*C+10,7,0,7);g.fill();});g.shadowBlur=0;
 }
-const PHASE_TXT={setup:'READY',running:'LIVE',paused:'PAUSED',ended:'FINAL',off:'FINAL'};
 const PHASE_ZH={setup:'賽前準備',running:'比賽進行中',paused:'暫停中',ended:'比賽結束',off:'比賽結束 · 燈號已關'};
 function renderStage(rec){
   const m=state.match,st=rec.st;
-  SIDES.forEach(s=>{$(`[data-tn="${s}"]`,st).textContent=tname(s);$(`[data-fn="${s}"]`,st).textContent=pad(Math.min(99,m.fouls[s]));$$(`[data-fb="${s}"] i`,st).forEach((b,i)=>b.classList.toggle('on',m.fouls[s]>i));});
+  SIDES.forEach(s=>{$(`[data-tn="${s}"]`,st).textContent=tname(state,s);$(`[data-fn="${s}"]`,st).textContent=pad(Math.min(99,m.fouls[s]));$$(`[data-fb="${s}"] i`,st).forEach((b,i)=>b.classList.toggle('on',m.fouls[s]>i));});
   const key=m.score.red+'-'+m.score.blue;if(rec.ledKey!==key){drawLED($('canvas',st),m.score.red,m.score.blue);rec.ledKey=key;}
 }
 const FLASH_STYLE={goal:s=>s==='red'?['#e8403a','#fff']:['#2f80ff','#fff'],foul:()=>['#f2b43c','#1b1300'],start:()=>['#ffffff','#111'],end:()=>['#111','#fff']};
@@ -519,9 +694,9 @@ $('#ref-red').innerHTML=refRemoteHTML('red');
 $('#ref-blue').innerHTML=refRemoteHTML('blue');
 function pressAnim(el){if(!el)return;el.classList.add('hit');setTimeout(()=>el.classList.remove('hit'),140);}
 $('#v-overview').addEventListener('click',e=>{
-  const b=e.target.closest('button');if(!b)return;ac();
+  const b=e.target.closest('button[data-hw]');if(!b)return;ac();
   if(b.dataset.hw==='reset'){if(!arm(b,'','',()=>act('reset')))toast('再按一次 RESET 確認重置');return;}
-  if(b.dataset.hw)act(b.dataset.hw,b.dataset.side);
+  act(b.dataset.hw,b.dataset.side);
 });
 
 /* ---------- computer control panel ---------- */
@@ -539,20 +714,21 @@ function teamColHTML(side){
 $('#cp-red').innerHTML=teamColHTML('red');
 $('#cp-blue').innerHTML=teamColHTML('blue');
 $('#v-control').addEventListener('click',e=>{
-  const b=e.target.closest('button');if(!b)return;ac();const t=b.dataset.cp;if(!t)return;
+  const b=e.target.closest('button[data-cp]');if(!b)return;ac();const t=b.dataset.cp;
   if(t==='undo'){undo();return;}
   if(t==='reset'){arm(b,'重置比賽，準備下一場','再按一次確認重置',()=>act('reset'));return;}
   act(t,b.dataset.side);
 });
 
 /* ---------- operator bar ---------- */
-$$('[data-newtab]').forEach(a=>{try{a.href=location.href.split('#')[0]+'#'+a.dataset.newtab;}catch(e){a.href='#'+a.dataset.newtab;}});
-$$('[data-name]').forEach(inp=>inp.addEventListener('input',()=>{state.teams[inp.dataset.name].name=inp.value;save();broadcast();renderAll();}));
-$('#op-duration').addEventListener('change',e=>{if(state.match.phase!=='setup')return;state.cfg.duration=+e.target.value;state.match.remaining=state.cfg.duration*1000;commit();});
+$$('[data-newtab]').forEach(a=>{a.addEventListener('click',()=>{a.href=cloud.on?linkFor(a.dataset.newtab):(location.origin+location.pathname+location.search+'#'+a.dataset.newtab);});try{a.href=location.origin+location.pathname+location.search+'#'+a.dataset.newtab;}catch(e){a.href='#'+a.dataset.newtab;}});
+const nameT={};
+$$('[data-name]').forEach(inp=>inp.addEventListener('input',()=>{const s=inp.dataset.name;clearTimeout(nameT[s]);nameT[s]=setTimeout(()=>act('name',s,inp.value.slice(0,20)),350);}));
+$('#op-duration').addEventListener('change',e=>act('duration',null,+e.target.value));
 $('#op-pause').addEventListener('click',()=>act('pause'));
 $$('.js-undo').forEach(b=>{if(!b.dataset.cp)b.addEventListener('click',undo);});
-$('#op-sound').addEventListener('change',e=>{state.cfg.sound=e.target.checked;commit();});
-$('#op-voice').addEventListener('change',e=>{state.cfg.voice=e.target.checked;commit();});
+$('#op-sound').addEventListener('change',e=>{L.sound=e.target.checked;saveL();});
+$('#op-voice').addEventListener('change',e=>{L.voice=e.target.checked;saveL();});
 $('#op-reset').addEventListener('click',e=>arm(e.currentTarget,'重置比賽','再按一次確認重置',()=>act('reset')));
 document.addEventListener('pointerdown',()=>ac(),{once:true});
 
@@ -560,19 +736,19 @@ document.addEventListener('pointerdown',()=>ac(),{once:true});
 function renderAll(){
   const m=state.match;
   stages.forEach(renderStage);fillBanners();
-  $$('.js-phase').forEach(p=>{p.dataset.phase=m.phase;p.textContent=PHASE_ZH[m.phase];});
+  $$('.js-phase').forEach(p=>{p.dataset.phase=m.phase;p.textContent=PHASE_ZH[m.phase]||'';});
   $$('.js-undo').forEach(b=>b.disabled=!undoStack.length);
   if(route==='overview'){
     SIDES.forEach(s=>{const i=$(`#name-${s}`);if(document.activeElement!==i)i.value=state.teams[s].name;});
     const d=$('#op-duration');d.value=String(state.cfg.duration);d.disabled=m.phase!=='setup';
     const pb=$('#op-pause');pb.textContent=m.phase==='paused'?'繼續':'暫停';pb.disabled=!(m.phase==='running'||m.phase==='paused');
-    $('#op-sound').checked=!!state.cfg.sound;$('#op-voice').checked=!!state.cfg.voice;
+    $('#op-sound').checked=!!L.sound;$('#op-voice').checked=!!L.voice;
   }
   if(route==='control'){
-    SIDES.forEach(s=>{$(`#cp-score-${s}`).textContent=m.score[s];$(`#cp-name-${s}`).textContent=tname(s);$(`#cp-foul-${s}`).textContent=`犯規 ${m.fouls[s]}`;$$(`[data-tname="${s}"]`).forEach(e=>e.textContent=tname(s));});
+    SIDES.forEach(s=>{$(`#cp-score-${s}`).textContent=m.score[s];$(`#cp-name-${s}`).textContent=tname(state,s);$(`#cp-foul-${s}`).textContent=`犯規 ${m.fouls[s]}`;$$(`[data-tname="${s}"]`).forEach(e=>e.textContent=tname(state,s));});
     const pb=$('#cp-pause');pb.firstChild.textContent=m.phase==='paused'?'繼續計時':'暫停';pb.disabled=!(m.phase==='running'||m.phase==='paused');
   }
-  const L=m.log,html=L.length?L.map(e=>`<li data-side="${e.side||''}"><time>${esc(e.t)}</time><i></i><span>${esc(e.text)}</span></li>`).join(''):'<li class="empty">尚無紀錄</li>';
+  const html=m.log.length?m.log.map(e=>`<li data-side="${esc(e.side||'')}"><time>${esc(e.t)}</time><i></i><span>${esc(e.text)}</span></li>`).join(''):'<li class="empty">尚無紀錄</li>';
   $$('.js-log').forEach(el=>el.innerHTML=html);
 }
 
@@ -581,6 +757,7 @@ const KEYMAP={g:['start'],h:['end'],q:['goal','red'],w:['goalUndo','red'],a:['de
 document.addEventListener('keydown',e=>{
   if(e.target.closest&&e.target.closest('input,textarea,select'))return;
   if(e.ctrlKey||e.metaKey||e.altKey||e.repeat)return;
+  if(!isCtrlRoute())return;
   const k=e.key.toLowerCase();
   if(k==='z'||k==='x'){comboPress(k);return;}
   const m=KEYMAP[k];if(!m)return;ac();
@@ -627,12 +804,12 @@ document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||!t.datase
 document.addEventListener('click',e=>{if(!e.target.closest('[data-gptest]'))return;if(!pads().map(g=>rumble(g,500)).some(Boolean))toast('這個瀏覽器不支援手把震動（Chrome、Edge 可以）');});
 window.addEventListener('gamepadconnected',e=>{renderGP();toast(`已連上搖桿 ${e.gamepad.index+1}`);});
 window.addEventListener('gamepaddisconnected',()=>renderGP());
-/* only one control window takes gamepad input, so a press never counts twice */
 const isCtrlRoute=()=>route==='overview'||route==='control';
-setInterval(()=>{if(!bc)return;let f=false;try{f=document.hasFocus();}catch(e){}try{bc.postMessage({from:WIN_ID,hb:{ctrl:isCtrlRoute(),focus:f}});}catch(e){}},800);
+setInterval(()=>{if(!bc)return;try{bc.postMessage({from:WIN_ID,hb:{ctrl:isCtrlRoute(),scr:route==='score-screen',focus:hasFocus(),snd:!!L.sound}});}catch(e){}},800);
+/* only one control window in a browser takes gamepad input, so a press never counts twice */
 function gpLeader(){
   if(!isCtrlRoute()||document.visibilityState==='hidden')return false;
-  let f=false;try{f=document.hasFocus();}catch(e){}if(f)return true;
+  if(hasFocus())return true;
   const now=Date.now(),others=Object.entries(peers).filter(([,p])=>now-p.t<2500&&p.ctrl);
   if(others.some(([,p])=>p.focus))return false;
   return others.every(([id])=>id>WIN_ID);
@@ -669,16 +846,18 @@ function setRoute(){
   stages.forEach(s=>ro.unobserve(s.wrap));stages.length=0;
   if(route==='overview')mountStage($('#v-overview .stage-wrap'));
   if(route==='score-screen')mountStage($('#full-wrap'));
-  renderAll();renderGP();
+  renderAll();renderGP();renderCloud();
 }
 window.addEventListener('hashchange',setRoute);
 $('#full-fs').addEventListener('click',()=>{const el=$('#v-full');try{(document.fullscreenElement?document.exitFullscreen():el.requestFullscreen()).catch(()=>toast('這個視窗不支援全螢幕，可改用瀏覽器的全螢幕功能'));}catch(e){toast('這個視窗不支援全螢幕，可改用瀏覽器的全螢幕功能');}});
+/* score screen needs a click before the browser lets it play sound */
+$('#v-full').addEventListener('click',()=>ac());
 
 /* ---------- frame loop ---------- */
 function tick(){
-  const m=state.match,now=Date.now(),txt=fmtClock(remaining());
+  const m=state.match,now=srvNow(),txt=fmtClock(remaining());
   if(txt!==lastTxt){$$('.js-timer').forEach(e=>e.textContent=txt);lastTxt=txt;}
-  if(m.phase==='running'){const raw=m.endAt-now;if((raw<=0&&(m.owner===WIN_ID||!m.owner))||raw<-1500)act('end',null,{auto:true});}
+  if(m.phase==='running'&&!(cloud.on&&cloud.readOnly)){const raw=m.endAt-now;if((raw<=0&&(m.owner===WIN_ID||!m.owner))||raw<-1500){if(!tick.ending){tick.ending=true;act('timeup');setTimeout(()=>tick.ending=false,1200);}}}
   const f=m.flash,active=!!(f&&now-f.at<2600);
   $$('.banner').forEach(b=>{if(b.classList.contains('show')!==active)b.classList.toggle('show',active);});
   SIDES.forEach(s=>{const hit=now-(m.ringFlash[s]||0)<3000;$$(`.ring[data-side="${s}"]`).forEach(r=>{r.classList.toggle('on',m.led==='white');r.classList.toggle('hit',hit);});});
@@ -687,6 +866,12 @@ function tick(){
 }
 setRoute();
 requestAnimationFrame(tick);
+/* reconnect: a ?room= link opens the room (watch only on the score screen); otherwise reuse this device's last room */
+(()=>{
+  const saved=L.cloud;
+  if(route==='score-screen'&&(qsRoom||(saved&&saved.room))){cloudConnect(qsRoom||saved.room,'',true,true).catch(()=>{});return;}
+  if(saved&&saved.room&&(!qsRoom||qsRoom===saved.room)&&(saved.readOnly||saved.pin))cloudConnect(saved.room,saved.pin,!!saved.readOnly,true).catch(()=>{});
+})();
 })();
 </script>
 </body>
