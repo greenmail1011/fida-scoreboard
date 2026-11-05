@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="無人機足球經賽營運系統（依 FIDA 2022 賽事系統復刻）：紅藍隊螢幕、LED 計分板、RFID 入列、操作台與裁判遙控器，支援電腦與 PS4 手把操作。">
+<meta name="description" content="無人機足球計分系統（依 FIDA 2022 賽事系統復刻）：LED 計分螢幕、計時、犯規燈、裁判遙控器，支援電腦、鍵盤與 PS4 手把操作。">
 <title>無人機足球經賽營運系統</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Orbitron:wght@600;800&family=Russo+One&display=swap">
 <style>
-/* Layout: a control room seen from the operator's seat — three venue screens on top, two team consoles and the referee gear on the desk below. Single dark world. */
+/* Layout: the scorer's desk — the venue score monitor on top, goal rings and the three referee remotes laid out on the desk below. Single dark world. */
 :root{
   --bg:#0c0e13; --panel:#151922; --panel-2:#1c212c; --line:#2a3140; --fg:#e9ecf3; --muted:#8c95a8;
-  --red:#e8403a; --red-deep:#7d1518; --blue:#2f80ff; --blue-deep:#0f3d6e; --amber:#f2b43c; --ok:#3ccf7a;
+  --red:#e8403a; --blue:#2f80ff; --amber:#f2b43c; --ok:#3ccf7a;
   --f-ui:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
   --f-clock:"Orbitron","Russo One",ui-monospace,monospace;
   --f-plate:"Russo One","Arial Black",Impact,sans-serif;
@@ -35,12 +35,11 @@ a{color:#9cc3ff}
 .tabs a{padding:7px 12px;border-radius:6px;color:var(--muted);text-decoration:none;font-weight:700;font-size:13px;border:1px solid transparent}
 .tabs a:hover{color:var(--fg);border-color:var(--line)}
 .tabs a[aria-current="page"]{color:var(--fg);background:var(--panel-2);border-color:var(--line)}
-
-.wrap{padding-block:16px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1680px;margin:0 auto}
+.wrap{padding-block:16px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1500px;margin:0 auto}
 
 /* ---------- operator bar ---------- */
 .opbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:16px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
-.pill{display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border-radius:999px;font-weight:900;font-size:13px;letter-spacing:.06em;background:#222836;color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border-radius:999px;font-weight:900;font-size:13px;letter-spacing:.06em;background:#222836;color:var(--muted);white-space:nowrap}
 .pill::before{content:"";width:9px;height:9px;border-radius:50%;background:currentColor}
 .pill[data-phase="running"]{color:var(--ok);background:rgba(60,207,122,.12)}
 .pill[data-phase="paused"]{color:var(--amber);background:rgba(242,180,60,.12)}
@@ -51,92 +50,53 @@ a{color:#9cc3ff}
 .opbtn:hover{border-color:#3d4659}
 .opbtn:disabled{opacity:.4;cursor:not-allowed}
 .opbtn.danger{border-color:#5a2a2a;color:#ffb4ae}
-.opbtn.danger.armed{background:#7d1518;color:#fff}
+.opbtn.armed{background:#7d1518;color:#fff;border-color:#ff3b30}
 .oplabel{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;font-weight:700}
-.oplabel select{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:5px 8px;color:var(--fg)}
+.oplabel select,.oplabel input{background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:5px 8px;color:var(--fg);font:600 13px var(--f-ui)}
+.oplabel input{width:9em;max-width:40vw}
+.oplabel.r{color:#ff8a80}.oplabel.b{color:#8fb9ff}
 .toggle{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;font-weight:700;cursor:pointer}
 .toggle input{accent-color:var(--ok)}
 
-/* ---------- room ---------- */
-.room{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;align-items:start}
-.screen{margin:0;min-width:0}
-.screen .tvframe{background:#05060a;padding:6px;border-radius:6px;box-shadow:0 0 0 1px #000,0 0 36px rgba(70,110,255,.28),0 14px 30px rgba(0,0,0,.6)}
+/* ---------- desk ---------- */
+.screen{margin:0 auto;max-width:1100px;min-width:0}
+.tvframe{background:#05060a;padding:7px;border-radius:7px;box-shadow:0 0 0 1px #000,0 0 40px rgba(70,110,255,.28),0 14px 30px rgba(0,0,0,.6)}
 .screen figcaption{display:flex;justify-content:space-between;gap:8px;margin-top:6px;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.05em}
-.screen figcaption a{font-weight:700}
 .stage-wrap{position:relative;width:100%;aspect-ratio:16/9;max-width:100%;overflow:hidden;background:#000}
 .stage{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0}
-
-.zone{display:flex;gap:14px;align-items:flex-start;min-width:0;flex-wrap:wrap}
-.zone-blue{flex-direction:row-reverse}
-.center{display:flex;flex-direction:column;align-items:center;gap:18px;min-width:0}
+.desk{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:24px;align-items:start;margin-top:26px}
+.side{display:flex;flex-direction:column;align-items:center;gap:10px;min-width:0}
+.side h4{margin:0;font:400 14px var(--f-plate);letter-spacing:.1em}
+.side.r h4{color:var(--red)}.side.b h4{color:var(--blue)}
+.center{display:flex;flex-direction:column;align-items:center;gap:22px;min-width:0}
 .rings{display:flex;gap:28px;justify-content:center;flex-wrap:wrap}
-
-@media (max-width:1100px){
-  .room{grid-template-columns:minmax(0,1fr)}
-  .screen-score{order:-1}
-}
-
-/* ---------- team console (RED ZONE / BLUE ZONE) ---------- */
-.console{position:relative;flex:1 1 340px;min-width:0;max-width:560px;color:#1d2026;background:linear-gradient(175deg,#d6d9de 0%,#b9bdc4 45%,#a2a7af 100%);border-radius:22px 22px 10px 10px;padding:12px 14px 14px;box-shadow:inset 0 2px 0 rgba(255,255,255,.7),inset 0 -3px 0 rgba(0,0,0,.18),0 18px 30px rgba(0,0,0,.55)}
-.c-top{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-.rfid{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:7px;background:linear-gradient(#f4f5f7,#dfe2e6);border:1px solid #8c9098;box-shadow:inset 0 1px 0 #fff;font-weight:900;font-size:12px;letter-spacing:.08em;color:#2b2f36}
-.rfid::before{content:"";width:18px;height:18px;border-radius:50%;border:2px solid #4a4f58;box-shadow:inset 0 0 0 3px #dfe2e6,inset 0 0 0 5px #4a4f58}
-.rfid:hover{background:#fff}
-.cardid{flex:1;min-width:0;padding:6px 8px;border-radius:6px;border:1px solid #8c9098;background:#eef0f3;color:#1d2026;font:600 12px var(--f-clock);letter-spacing:.05em}
-.c-face{display:grid;grid-template-columns:minmax(28px,52px) minmax(0,1fr) minmax(28px,52px);gap:10px;align-items:center}
-.speaker{aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#6a6f78 0 12%,#15171b 13% 30%,#2d3036 31% 52%,#0b0c0e 53% 64%,#3a3e45 65% 70%,#16181c 71%);box-shadow:0 2px 4px rgba(0,0,0,.4)}
-.c-screen{position:relative;border:6px solid #101216;border-radius:6px;background:#000;box-shadow:0 0 0 2px #6b7079}
-.tag-pop{position:absolute;inset:0;display:flex;align-items:center;gap:10px;padding:8px;background:rgba(6,8,18,.88);color:#fff;backdrop-filter:blur(2px)}
-.tag-pop img{height:84%;aspect-ratio:300/360;object-fit:cover;border-radius:4px;background:#ddd}
-.tag-pop b{display:block;font-size:clamp(14px,2.2vw,22px);font-weight:900}
-.tag-pop small{display:block;color:#b9c2d6;font-size:11px;letter-spacing:.06em}
-.tag-pop em{display:block;margin-top:4px;font-style:normal;color:var(--amber);font-weight:700;font-size:12px}
-.arcades{display:flex;justify-content:space-between;gap:6px;margin-top:14px;padding:0 4px}
-.arc{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:0;border:0;background:none;padding:0}
-.arc i{display:block;width:min(58px,100%);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 36% 30%,rgba(255,255,255,.85) 0 7%,rgba(255,255,255,0) 26%),radial-gradient(circle,var(--c) 0 56%,var(--c2) 57% 66%,#2b2d31 67% 72%,#8a8e96 73%);box-shadow:0 5px 0 #4d5158,0 8px 10px rgba(0,0,0,.4);transition:transform .06s,box-shadow .06s}
-.arc:active i,.arc.hit i{transform:translateY(4px);box-shadow:0 1px 0 #4d5158,0 2px 4px rgba(0,0,0,.4);filter:brightness(1.35)}
-.arc span{font:700 10px var(--f-plate);letter-spacing:.04em;color:#30343b}
-.arc .dot{width:6px;height:6px;border-radius:50%;background:#6d727a}
-.arc.filled .dot{background:var(--ok);box-shadow:0 0 6px var(--ok)}
-.arc.out .dot{background:#fff}
-.plate{margin-top:10px;text-align:center;font:400 clamp(20px,3vw,30px)/1 var(--f-plate);letter-spacing:.08em;color:var(--tc);-webkit-text-stroke:1px #2b0a0a;text-shadow:2px 2px 0 rgba(0,0,0,.25)}
-.console-blue .plate{-webkit-text-stroke:1px #071a33}
-.picker{position:absolute;left:10px;right:10px;top:46px;z-index:5;max-height:300px;overflow:auto;background:#141821;color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:6px;box-shadow:0 14px 40px rgba(0,0,0,.6)}
-.picker h4{margin:4px 6px 6px;font-size:12px;color:var(--muted);letter-spacing:.06em}
-.picker button{display:flex;align-items:center;gap:10px;width:100%;padding:6px;border:0;border-radius:6px;background:none;text-align:left}
-.picker button:hover{background:var(--panel-2)}
-.picker img{width:34px;height:40px;object-fit:cover;border-radius:4px;background:#ddd}
-.picker small{color:var(--muted);font:600 11px var(--f-clock)}
+@media (max-width:900px){.desk{grid-template-columns:minmax(0,1fr)}.center{order:-1}}
 
 /* ---------- remotes ---------- */
-.remotes{display:flex;gap:12px;flex:0 0 auto}
-.remote{position:relative;width:112px;padding:16px 12px 26px;border-radius:26px 26px 22px 22px;background:linear-gradient(180deg,#fbfbfb,#e4e5e7);color:#1b1d21;box-shadow:inset 0 -3px 0 rgba(0,0,0,.08),0 14px 24px rgba(0,0,0,.5);display:flex;flex-direction:column;align-items:center;gap:10px}
+.remotes{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.remote{position:relative;width:112px;padding:16px 12px 24px;border-radius:26px 26px 22px 22px;background:linear-gradient(180deg,#fbfbfb,#e4e5e7);color:#1b1d21;box-shadow:inset 0 -3px 0 rgba(0,0,0,.08),0 14px 24px rgba(0,0,0,.5);display:flex;flex-direction:column;align-items:center;gap:10px}
 .remote h5{margin:0;font:400 10px var(--f-plate);letter-spacing:.1em;color:#666}
 .rrow{display:flex;gap:10px;justify-content:center}
 .mb{display:flex;flex-direction:column;align-items:center;gap:3px;border:0;background:none;padding:0}
 .mb i{display:block;width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 40% 34%,#fff 0 9%,#d9dde2 22%,#9aa0a8 58%,#6c727a 100%);border:3px solid #c4c8ce;box-shadow:0 3px 0 #9ea3aa,0 4px 6px rgba(0,0,0,.25);position:relative}
 .mb i::after{content:attr(data-g);position:absolute;inset:0;display:grid;place-items:center;font-size:13px;color:#3a3e45;font-weight:900}
 .mb:active i,.mb.hit i{transform:translateY(2px);box-shadow:0 1px 0 #9ea3aa}
-.mb.big i{width:52px;height:52px}
+.mb.lg i{width:52px;height:52px}
 .mb span{font:400 9px/1.15 var(--f-plate);letter-spacing:.03em;text-align:center;color:#2a2d33;max-width:84px}
 .mb small{font:700 9px var(--f-ui);color:#7a7f87}
+.mb.armed i{border-color:#ff3b30;box-shadow:0 0 0 3px rgba(255,59,48,.4)}
 .remote-main{width:150px;padding-top:22px;margin-top:52px}
 .remote-main::before{content:"";position:absolute;top:-62px;right:22px;width:8px;height:66px;border-radius:4px;background:linear-gradient(90deg,#1a1a1a,#444,#1a1a1a)}
-.vib-led{width:10px;height:10px;border-radius:50%;background:#bbb;box-shadow:inset 0 1px 2px rgba(0,0,0,.3)}
-.remote-main.vib{animation:buzz .12s linear infinite}
-.remote-main.vib .vib-led{background:#ff3b30;box-shadow:0 0 10px #ff3b30}
-.vib-note{min-height:16px;font-size:11px;font-weight:900;color:#c62828;text-align:center}
-@keyframes buzz{0%{transform:translate(0,0) rotate(0)}25%{transform:translate(-2px,1px) rotate(-1deg)}50%{transform:translate(2px,-1px) rotate(1deg)}75%{transform:translate(-1px,-1px) rotate(0)}100%{transform:translate(0,0)}}
 
 /* ---------- goal rings ---------- */
 .ringbox{display:flex;flex-direction:column;align-items:center;gap:8px}
-.ring{width:min(150px,34vw);aspect-ratio:1;max-width:100%;border-radius:50%;border:20px solid #3b404a;background:transparent;box-shadow:inset 0 0 0 2px rgba(0,0,0,.4);transition:border-color .2s,box-shadow .2s}
+.ring{width:min(140px,34vw);aspect-ratio:1;max-width:100%;border-radius:50%;border:20px solid #3b404a;box-shadow:inset 0 0 0 2px rgba(0,0,0,.4);transition:border-color .2s,box-shadow .2s}
 .ring.on{border-color:#f6f7ff;box-shadow:0 0 26px rgba(255,255,255,.55),inset 0 0 18px rgba(255,255,255,.45)}
 .ring.on.hit{border-color:var(--tc);box-shadow:0 0 44px var(--tc),inset 0 0 22px var(--tc)}
 .ringbox span{font:400 11px var(--f-plate);letter-spacing:.1em;color:var(--muted)}
 
-/* ---------- lower ---------- */
-.lower{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:18px;margin-top:22px}
+/* ---------- boxes ---------- */
+.lower{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;margin-top:26px}
 @media (max-width:900px){.lower{grid-template-columns:minmax(0,1fr)}}
 .box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
 .box h3{margin:0 0 10px;font-size:14px;font-weight:900;letter-spacing:.06em}
@@ -147,15 +107,13 @@ a{color:#9cc3ff}
 .log li[data-side="red"] i{background:var(--red)}
 .log li[data-side="blue"] i{background:var(--blue)}
 .log .empty{color:var(--muted);display:block;border:0}
-.help{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
-@media (max-width:640px){.help{grid-template-columns:minmax(0,1fr)}}
-.help ol{margin:0;padding-left:20px;color:#cfd5e2}
-.help li{margin-bottom:4px}
 .keys{width:100%;border-collapse:collapse;font-size:12px}
-.keys td{padding:4px 6px;border-bottom:1px solid #1f2430;vertical-align:top}
+.keys td{padding:5px 6px;border-bottom:1px solid #1f2430;vertical-align:top}
 .keys td:first-child{color:var(--muted);white-space:nowrap}
 kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border:1px solid #3a4253;background:#202634;font:700 11px var(--f-clock);text-align:center;color:#e9ecf3}
 .note{color:var(--muted);font-size:12px;margin:10px 0 0}
+.help ol{margin:0 0 6px;padding-left:20px;color:#cfd5e2}
+.help li{margin-bottom:4px}
 
 /* ---------- full view ---------- */
 #v-full{position:fixed;inset:0;background:#000;z-index:20}
@@ -164,108 +122,6 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
 .full-tools{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));display:flex;gap:6px;opacity:.15;transition:opacity .2s;z-index:3}
 .full-tools:hover,.full-tools:focus-within{opacity:1}
 .full-tools a,.full-tools button{padding:7px 12px;border-radius:6px;border:1px solid #333;background:#111;color:#ddd;font-size:12px;font-weight:700;text-decoration:none}
-
-/* ---------- roster ---------- */
-.rcols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
-@media (max-width:900px){.rcols{grid-template-columns:minmax(0,1fr)}}
-.rteam{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0;border-top:4px solid var(--tc)}
-.rteam h2{margin:0 0 12px;font:400 18px var(--f-plate);letter-spacing:.08em;color:var(--tc)}
-.tfields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
-.tfields label,.prow label{display:flex;flex-direction:column;gap:3px;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.04em;min-width:0}
-.tfields input,.prow input[type=text]{width:100%;min-width:0;padding:7px 9px;border-radius:6px;border:1px solid var(--line);background:#0f1218;color:var(--fg);font:600 13px var(--f-ui)}
-.logo-edit{grid-column:1/-1;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.logo-edit img{width:56px;height:56px;border-radius:50%;background:#222}
-.plist{display:flex;flex-direction:column;gap:8px}
-.prow{display:grid;grid-template-columns:54px minmax(0,1fr) minmax(0,1fr) minmax(0,.9fr) auto auto;gap:8px;align-items:end;padding:8px;border-radius:8px;background:#11151d;border:1px solid #1f2430}
-@media (max-width:640px){.prow{grid-template-columns:54px minmax(0,1fr) minmax(0,1fr)}}
-.prow .ph{width:54px;height:64px;border-radius:6px;object-fit:cover;background:#ddd;cursor:pointer;border:0;padding:0}
-.prow .chk{flex-direction:row;align-items:center;gap:4px;padding-bottom:8px;white-space:nowrap}
-.prow .del{padding:6px 9px;border-radius:6px;border:1px solid #4a2626;background:none;color:#ffb4ae;font-size:12px;margin-bottom:2px}
-.addp{margin-top:10px;width:100%;padding:9px;border-radius:8px;border:1px dashed #3a4253;background:none;color:var(--fg);font-weight:700}
-.io{margin-top:18px}
-.io textarea{width:100%;min-height:90px;border-radius:8px;border:1px solid var(--line);background:#0f1218;color:var(--fg);font:12px ui-monospace,monospace;padding:8px}
-.io .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-
-/* ---------- toast ---------- */
-.toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);max-width:calc(100% - 32px);background:#1f2532;border:1px solid #3a4253;color:#fff;padding:10px 16px;border-radius:10px;font-weight:700;opacity:0;pointer-events:none;transition:.2s;z-index:50}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-
-/* =========================================================
-   VENUE DISPLAYS — authored on a fixed 1920×1080 stage
-   ========================================================= */
-/* score monitor */
-.sb{position:absolute;inset:0;overflow:hidden;background:radial-gradient(70% 60% at 50% 55%,#2a1c5a 0%,#140f33 45%,#07061a 100%);font-family:var(--f-ui);color:#fff}
-.sb-deco{position:absolute;inset:0;pointer-events:none}
-.sb-deco .l{position:absolute;height:4px;border-radius:2px}
-.sb-deco .l1{left:60px;right:60px;top:206px;background:linear-gradient(90deg,transparent,#ff2d95 18%,#9a6bff 50%,#22d3ff 82%,transparent)}
-.sb-deco .l2{left:120px;right:120px;bottom:70px;background:linear-gradient(90deg,transparent,#22d3ff 20%,#9a6bff 50%,#ff2d95 80%,transparent)}
-.sb-deco .l3{left:60px;right:60px;top:24px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35) 30%,rgba(255,255,255,.35) 70%,transparent);height:2px}
-.sb-deco .burst{position:absolute;top:150px;width:220px;height:110px;filter:blur(1px);opacity:.9}
-.sb-deco .burst.b1{left:520px;background:conic-gradient(from 200deg at 100% 50%,transparent 0 20deg,#ff2d95 24deg,transparent 30deg,#22d3ff 40deg,transparent 48deg)}
-.sb-deco .burst.b2{right:520px;background:conic-gradient(from 20deg at 0% 50%,transparent 0 20deg,#22d3ff 24deg,transparent 30deg,#ff2d95 40deg,transparent 48deg)}
-.sb-top{position:absolute;left:60px;right:60px;top:36px;height:160px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:40px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,0));border-top:2px solid rgba(255,255,255,.12)}
-.sb-team{font:900 64px/1 var(--f-ui);letter-spacing:6px;color:#f1f2fb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sb-team.r{text-align:center;text-shadow:0 0 22px rgba(255,60,60,.55)}
-.sb-team.b{text-align:center;text-shadow:0 0 22px rgba(60,140,255,.6)}
-.sb-clock{font:800 150px/1 var(--f-clock);letter-spacing:4px;font-variant-numeric:tabular-nums;color:#fff;text-shadow:0 0 18px rgba(255,255,255,.35)}
-.sb-mid{position:absolute;left:60px;right:60px;top:250px;bottom:110px;display:grid;grid-template-columns:150px 1fr 150px;gap:40px;align-items:center}
-.sb-panel{position:relative;height:100%;border-radius:10px;padding:22px;background:#08070f;box-shadow:0 0 0 3px #ff2d95,0 0 0 6px #08070f,0 0 0 8px #22d3ff,0 0 40px rgba(154,107,255,.45)}
-.sb-panel canvas{display:block;width:100%;height:100%}
-.sb-foul{display:flex;flex-direction:column;align-items:center;gap:16px;height:100%;justify-content:center}
-.sb-fn{font:800 66px/1 var(--f-clock);color:var(--amber);padding:10px 14px;border-radius:8px;background:#1a1408;box-shadow:inset 0 0 0 3px rgba(242,180,60,.5);font-variant-numeric:tabular-nums}
-.sb-blocks{display:flex;flex-direction:column-reverse;gap:14px}
-.sb-blocks i{display:block;width:120px;height:70px;border-radius:6px;background:#2b2a3b;box-shadow:inset 0 0 0 2px #3c3a52}
-.sb-blocks i.on{background:linear-gradient(#ffd067,#f2a91f);box-shadow:0 0 22px rgba(242,180,60,.7),inset 0 0 0 2px #ffe19a}
-.sb-foul.r .sb-blocks i:first-child{box-shadow:inset 6px 0 0 #ff3b55,inset 0 0 0 2px #3c3a52}
-.sb-foul.b .sb-blocks i:first-child{box-shadow:inset -6px 0 0 #2f80ff,inset 0 0 0 2px #3c3a52}
-.sb-phase{position:absolute;left:0;right:0;bottom:22px;text-align:center;font:600 28px var(--f-clock);letter-spacing:12px;color:rgba(255,255,255,.55)}
-
-/* banners on venue displays */
-.banner{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;opacity:0;transition:opacity .25s;z-index:10}
-.banner.show{opacity:1}
-.banner-box{transform:skewX(-10deg);padding:40px 110px 46px;background:var(--bc,#fff);color:var(--bt,#111);text-align:center;box-shadow:0 0 0 8px rgba(255,255,255,.85),0 30px 80px rgba(0,0,0,.6)}
-.banner.show .banner-box{animation:pop .45s cubic-bezier(.2,1.4,.4,1)}
-.banner-box b{display:block;transform:skewX(10deg);font:400 150px/1 var(--f-plate);letter-spacing:8px}
-.banner-box span{display:block;transform:skewX(10deg);margin-top:14px;font:900 54px/1.1 var(--f-ui);letter-spacing:6px}
-@keyframes pop{0%{transform:skewX(-10deg) scale(.4);opacity:0}100%{transform:skewX(-10deg) scale(1);opacity:1}}
-
-/* team monitors */
-.tv{position:absolute;inset:0;overflow:hidden;font-family:var(--f-ui)}
-.tv-red{--tone:#5e1a1c;background:radial-gradient(110% 90% at 18% 0%,#5c1519 0%,#2c0a0d 52%,#140508 100%)}
-.tv-blue{--tone:#123a5c;background:radial-gradient(110% 90% at 82% 0%,#0e3b57 0%,#08203a 52%,#040c18 100%)}
-.tv-streak{position:absolute;top:-30px;height:150px;width:1100px;transform:skewX(-38deg);opacity:.9}
-.tv-red .tv-streak{left:-120px;background:linear-gradient(100deg,transparent 0%,rgba(230,50,50,.75) 45%,rgba(120,20,20,.1) 100%)}
-.tv-blue .tv-streak{right:-120px;transform:skewX(38deg);background:linear-gradient(260deg,transparent 0%,rgba(40,120,255,.75) 45%,rgba(20,60,140,.1) 100%)}
-.tv-streak2{position:absolute;top:0;height:120px;width:600px;opacity:.35;background:repeating-linear-gradient(90deg,rgba(255,255,255,.25) 0 2px,transparent 2px 22px)}
-.tv-red .tv-streak2{right:0;transform:skewX(-38deg)}
-.tv-blue .tv-streak2{left:0;transform:skewX(38deg)}
-.tv-title{position:absolute;top:30px;font:900 72px/1 var(--f-ui);letter-spacing:6px;color:#fff;text-shadow:0 4px 18px rgba(0,0,0,.6);white-space:nowrap}
-.tv-red .tv-title{right:110px}
-.tv-blue .tv-title{left:110px}
-.tv-grid{position:absolute;top:150px;width:1300px;height:870px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:32px}
-.tv-red .tv-grid{left:70px}
-.tv-blue .tv-grid{right:70px}
-.pennant{position:absolute;top:140px;width:440px;height:880px}
-.tv-red .pennant{right:80px}
-.tv-blue .pennant{left:80px}
-.pennant svg{width:100%;height:100%;overflow:visible}
-
-.card{position:relative;display:flex;flex-direction:column;border-radius:10px;overflow:hidden;background:#f9f6ef;box-shadow:0 14px 34px rgba(0,0,0,.55)}
-.card-top{position:relative;flex:1;background:linear-gradient(163deg,#fffdf8 0 47%,#e3c77d 47% 51%,var(--tone) 51% 100%)}
-.card.coach .card-top{background:linear-gradient(180deg,#eceae6,#d4d1cb)}
-.card.empty .card-top{background:#fbfbf9}
-.card-en{position:absolute;left:20px;top:16px;font:400 26px/1.05 var(--f-plate);color:#262626;text-transform:uppercase;letter-spacing:1px;max-width:260px}
-.card-zh{position:absolute;left:20px;top:78px;font:700 22px var(--f-ui);color:#666}
-.card-logo{position:absolute;right:16px;top:14px;width:60px;height:60px}
-.card-photo{position:absolute;left:50%;bottom:0;transform:translateX(-50%);height:84%;max-width:none}
-.card.coach .card-photo{height:96%}
-.card-bar{position:relative;height:84px;background:var(--pc);display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 12px;clip-path:polygon(0 22%,34% 22%,38% 0,100% 0,100% 100%,0 100%)}
-.card-pos{font:400 24px/1 var(--f-plate);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.25);letter-spacing:1px}
-.card-name{font:900 50px/1 var(--f-ui);color:#fff;letter-spacing:4px;text-shadow:0 2px 0 rgba(0,0,0,.3)}
-.card.forfeit .card-top,.card.forfeit .card-bar{filter:grayscale(1) brightness(.78) contrast(.95)}
-.card-flag{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:250px;height:250px;z-index:2;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45))}
-.card-badge{position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:3;padding:6px 16px;border-radius:6px;background:#3ccf7a;color:#06240f;font:900 22px var(--f-ui);letter-spacing:2px;white-space:nowrap}
-.card-out{position:absolute;right:16px;bottom:96px;z-index:3;padding:4px 12px;border-radius:4px;background:#fff;color:#222;font:900 22px var(--f-ui);letter-spacing:3px}
 
 /* ---------- computer control panel ---------- */
 .cp-status{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;align-items:center;margin-bottom:16px;padding:14px 16px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
@@ -280,7 +136,7 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
 .cp-clock{display:flex;flex-direction:column;align-items:center;gap:6px}
 .cp-clock b{font:800 40px/1 var(--f-clock);font-variant-numeric:tabular-nums}
 @media (max-width:640px){.cp-status{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.cp-clock{grid-column:1/-1;order:-1}.cp-score{font-size:40px}.cp-clock b{font-size:30px}}
-.cp-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr) minmax(0,1fr);gap:16px;align-items:start}
+.cp-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
 @media (max-width:1000px){.cp-grid{grid-template-columns:minmax(0,1fr)}}
 .cp-col{display:flex;flex-direction:column;gap:14px;min-width:0}
 .cp-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;min-width:0}
@@ -292,23 +148,14 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
 .big small{font:600 11px var(--f-ui);color:var(--muted)}
 .big:hover{border-color:#46506a}
 .big:active,.big.hit{transform:translateY(1px);filter:brightness(1.25)}
-.big.goal{min-height:84px;font-size:22px;background:color-mix(in srgb,var(--tc) 26%,var(--panel-2));border-color:color-mix(in srgb,var(--tc) 60%,var(--line))}
+.big.goal{min-height:92px;font-size:24px;background:color-mix(in srgb,var(--tc) 26%,var(--panel-2));border-color:color-mix(in srgb,var(--tc) 60%,var(--line))}
 .big.wide{grid-column:1/-1}
 .big.go{background:rgba(60,207,122,.15);border-color:rgba(60,207,122,.5)}
 .big.stop{background:rgba(232,64,58,.13);border-color:rgba(232,64,58,.45)}
-.big.alert{background:#7d1518;border-color:#ff3b30;animation:pulse 1s ease-in-out infinite}
 .big.armed{background:#7d1518;border-color:#ff3b30}
-@keyframes pulse{50%{box-shadow:0 0 0 5px rgba(255,59,48,.35)}}
 .big:disabled{opacity:.4;cursor:not-allowed}
-.lineup{display:flex;flex-direction:column;gap:6px}
-.lu{display:grid;grid-template-columns:84px minmax(0,1fr) auto;gap:8px;align-items:center;min-height:34px}
-.lu-pos{padding:5px 6px;border-radius:5px;background:var(--pc);color:#fff;font:400 12px var(--f-plate);text-align:center;text-shadow:0 1px 0 rgba(0,0,0,.3)}
-.lu select{min-width:0;width:100%;padding:7px 8px;border-radius:6px;border:1px solid var(--line);background:#0f1218;color:var(--fg);font:600 13px var(--f-ui)}
-.lu-name{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lu-name.out{color:var(--muted);text-decoration:line-through}
-.lu button{padding:6px 10px;border-radius:6px;border:1px solid #4a2626;background:none;color:#ffb4ae;font-size:12px;font-weight:700;white-space:nowrap}
-.lu button:disabled{opacity:.3;cursor:not-allowed}
-/* gamepads */
+
+/* ---------- gamepads ---------- */
 .gp-list{display:flex;flex-direction:column;gap:10px}
 .gp{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;padding:10px;border-radius:8px;background:#11151d;border:1px solid #1f2430}
 .gp b{font-size:13px}
@@ -324,9 +171,43 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
 .ps{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;margin-right:2px;border-radius:11px;background:#202634;border:1px solid #3a4253;font:700 11px var(--f-ui);color:#fff}
 .ps.tri{color:#3ddc97}.ps.cir{color:#ff6b6b}.ps.crs{color:#7aa7ff}.ps.sq{color:#ff8ad8}
 
+/* ---------- toast ---------- */
+.toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);max-width:calc(100% - 32px);background:#1f2532;border:1px solid #3a4253;color:#fff;padding:10px 16px;border-radius:10px;font-weight:700;opacity:0;pointer-events:none;transition:.2s;z-index:50}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* =========== SCORE MONITOR — authored on a fixed 1920×1080 stage =========== */
+.sb{position:absolute;inset:0;overflow:hidden;background:radial-gradient(70% 60% at 50% 55%,#2a1c5a 0%,#140f33 45%,#07061a 100%);font-family:var(--f-ui);color:#fff}
+.sb-deco{position:absolute;inset:0;pointer-events:none}
+.sb-deco .l{position:absolute;height:4px;border-radius:2px}
+.sb-deco .l1{left:60px;right:60px;top:206px;background:linear-gradient(90deg,transparent,#ff2d95 18%,#9a6bff 50%,#22d3ff 82%,transparent)}
+.sb-deco .l2{left:120px;right:120px;bottom:70px;background:linear-gradient(90deg,transparent,#22d3ff 20%,#9a6bff 50%,#ff2d95 80%,transparent)}
+.sb-deco .l3{left:60px;right:60px;top:24px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35) 30%,rgba(255,255,255,.35) 70%,transparent);height:2px}
+.sb-deco .burst{position:absolute;top:150px;width:220px;height:110px;opacity:.9}
+.sb-deco .burst.b1{left:520px;background:conic-gradient(from 200deg at 100% 50%,transparent 0 20deg,#ff2d95 24deg,transparent 30deg,#22d3ff 40deg,transparent 48deg)}
+.sb-deco .burst.b2{right:520px;background:conic-gradient(from 20deg at 0% 50%,transparent 0 20deg,#22d3ff 24deg,transparent 30deg,#ff2d95 40deg,transparent 48deg)}
+.sb-top{position:absolute;left:60px;right:60px;top:36px;height:160px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:40px;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,0));border-top:2px solid rgba(255,255,255,.12)}
+.sb-team{font:900 64px/1 var(--f-ui);letter-spacing:6px;color:#f1f2fb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+.sb-team.r{text-shadow:0 0 22px rgba(255,60,60,.55)}
+.sb-team.b{text-shadow:0 0 22px rgba(60,140,255,.6)}
+.sb-clock{font:800 150px/1 var(--f-clock);letter-spacing:4px;font-variant-numeric:tabular-nums;color:#fff;text-shadow:0 0 18px rgba(255,255,255,.35)}
+.sb-mid{position:absolute;left:60px;right:60px;top:250px;bottom:110px;display:grid;grid-template-columns:150px 1fr 150px;gap:40px;align-items:center}
+.sb-panel{position:relative;height:100%;border-radius:10px;padding:22px;background:#08070f;box-shadow:0 0 0 3px #ff2d95,0 0 0 6px #08070f,0 0 0 8px #22d3ff,0 0 40px rgba(154,107,255,.45)}
+.sb-panel canvas{display:block;width:100%;height:100%}
+.sb-foul{display:flex;flex-direction:column;align-items:center;gap:16px;height:100%;justify-content:center}
+.sb-fn{font:800 66px/1 var(--f-clock);color:var(--amber);padding:10px 14px;border-radius:8px;background:#1a1408;box-shadow:inset 0 0 0 3px rgba(242,180,60,.5);font-variant-numeric:tabular-nums}
+.sb-blocks{display:flex;flex-direction:column-reverse;gap:14px}
+.sb-blocks i{display:block;width:120px;height:70px;border-radius:6px;background:#2b2a3b;box-shadow:inset 0 0 0 2px #3c3a52}
+.sb-blocks i.on{background:linear-gradient(#ffd067,#f2a91f);box-shadow:0 0 22px rgba(242,180,60,.7),inset 0 0 0 2px #ffe19a}
+.sb-phase{position:absolute;left:0;right:0;bottom:22px;text-align:center;font:600 28px var(--f-clock);letter-spacing:12px;color:rgba(255,255,255,.55)}
+.banner{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;opacity:0;transition:opacity .25s;z-index:10}
+.banner.show{opacity:1}
+.banner-box{transform:skewX(-10deg);padding:40px 110px 46px;background:var(--bc,#fff);color:var(--bt,#111);text-align:center;box-shadow:0 0 0 8px rgba(255,255,255,.85),0 30px 80px rgba(0,0,0,.6)}
+.banner.show .banner-box{animation:pop .45s cubic-bezier(.2,1.4,.4,1)}
+.banner-box b{display:block;transform:skewX(10deg);font:400 150px/1 var(--f-plate);letter-spacing:8px}
+.banner-box span{display:block;transform:skewX(10deg);margin-top:14px;font:900 54px/1.1 var(--f-ui);letter-spacing:6px}
+@keyframes pop{0%{transform:skewX(-10deg) scale(.4);opacity:0}100%{transform:skewX(-10deg) scale(1);opacity:1}}
+
 @media (prefers-reduced-motion:reduce){
-  .big.alert{animation:none}
-  .remote-main.vib{animation:none;outline:3px solid #ff3b30}
   .banner.show .banner-box{animation:none}
   .toast,.ring{transition:none}
 }
@@ -339,23 +220,22 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
     <span class="brand-mark" aria-hidden="true"></span>
     <div>
       <h1>無人機足球經賽營運系統</h1>
-      <p>DRONE SOCCER GAME MANAGEMENT · 依 FIDA 2022 賽事系統復刻</p>
+      <p>DRONE SOCCER SCOREBOARD · 依 FIDA 2022 賽事系統復刻</p>
     </div>
   </div>
   <nav class="tabs" aria-label="畫面">
-    <a href="#overview" data-route="overview">總覽控制室</a>
+    <a href="#overview" data-route="overview">總覽</a>
     <a href="#control" data-route="control">電腦操作</a>
-    <a href="#red-screen" data-route="red-screen">紅隊螢幕</a>
-    <a href="#score-screen" data-route="score-screen">計分螢幕</a>
-    <a href="#blue-screen" data-route="blue-screen">藍隊螢幕</a>
-    <a href="#roster" data-route="roster">名冊與隊伍</a>
+    <a href="#score-screen" data-route="score-screen">計分螢幕（全螢幕）</a>
   </nav>
 </header>
 
 <!-- ================= OVERVIEW ================= -->
 <section id="v-overview" class="wrap">
   <div class="opbar">
-    <span class="pill" id="phase-pill" data-phase="setup">賽前準備</span>
+    <span class="pill js-phase" data-phase="setup">賽前準備</span>
+    <label class="oplabel r" for="name-red">紅隊<input id="name-red" data-name="red" autocomplete="off"></label>
+    <label class="oplabel b" for="name-blue">藍隊<input id="name-blue" data-name="blue" autocomplete="off"></label>
     <label class="oplabel" for="op-duration">比賽時間
       <select id="op-duration">
         <option value="120">2:00</option>
@@ -365,82 +245,53 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
       </select>
     </label>
     <button class="opbtn" id="op-pause" type="button">暫停</button>
-    <button class="opbtn" id="op-undo" type="button">復原上一步</button>
+    <button class="opbtn js-undo" type="button">復原上一步</button>
     <label class="toggle" for="op-sound"><input type="checkbox" id="op-sound" checked>音效</label>
-    <label class="toggle" for="op-voice"><input type="checkbox" id="op-voice" checked>語音播報</label>
+    <label class="toggle" for="op-voice"><input type="checkbox" id="op-voice" checked>語音</label>
     <span class="sep"></span>
     <button class="opbtn danger" id="op-reset" type="button">重置比賽</button>
   </div>
 
-  <div class="room">
-    <figure class="screen screen-red">
-      <div class="tvframe"><div class="stage-wrap" data-kind="red"></div></div>
-      <figcaption><span>左 · 紅隊螢幕</span><a data-newtab="red-screen" target="_blank" rel="noopener">新分頁全螢幕 ↗</a></figcaption>
-    </figure>
-    <figure class="screen screen-score">
-      <div class="tvframe"><div class="stage-wrap" data-kind="score"></div></div>
-      <figcaption><span>中 · 計分螢幕</span><a data-newtab="score-screen" target="_blank" rel="noopener">新分頁全螢幕 ↗</a></figcaption>
-    </figure>
-    <figure class="screen screen-blue">
-      <div class="tvframe"><div class="stage-wrap" data-kind="blue"></div></div>
-      <figcaption><span>右 · 藍隊螢幕</span><a data-newtab="blue-screen" target="_blank" rel="noopener">新分頁全螢幕 ↗</a></figcaption>
-    </figure>
+  <figure class="screen">
+    <div class="tvframe"><div class="stage-wrap" data-kind="score"></div></div>
+    <figcaption><span>計分螢幕</span><a data-newtab="score-screen" target="_blank" rel="noopener">在新分頁全螢幕開啟 ↗</a></figcaption>
+  </figure>
 
-    <div class="zone zone-red" id="zone-red"></div>
+  <div class="desk">
+    <div class="side r"><h4>RED 副審</h4><div class="remotes" id="ref-red"></div></div>
     <div class="center">
       <div class="rings">
         <div class="ringbox"><div class="ring" data-side="red" style="--tc:var(--red)"></div><span>紅隊進攻球門</span></div>
         <div class="ringbox"><div class="ring" data-side="blue" style="--tc:var(--blue)"></div><span>藍隊進攻球門</span></div>
       </div>
-      <div class="remote remote-main" id="remote-main">
+      <div class="remote remote-main">
         <h5>主審 REFEREE</h5>
-        <span class="vib-led" aria-hidden="true"></span>
         <div class="rrow">
-          <button class="mb" type="button" data-hw="start"><i data-g="▶"></i><span>START</span><small>開始</small></button>
+          <button class="mb" type="button" data-hw="start"><i data-g="▶"></i><span>START</span><small>開始／繼續</small></button>
           <button class="mb" type="button" data-hw="end"><i data-g="❚❚"></i><span>END</span><small>終場／關燈</small></button>
         </div>
-        <div class="rrow">
-          <button class="mb" type="button" data-hw="change" data-side="red"><i></i><span>RED STRIKER CHANGE</span></button>
-          <button class="mb" type="button" data-hw="change" data-side="blue"><i></i><span>BLUE STRIKER CHANGE</span></button>
-        </div>
-        <div class="vib-note" id="vib-note"></div>
+        <button class="mb" type="button" data-hw="reset"><i data-g="⟲"></i><span>RESET</span><small>按兩下重置</small></button>
       </div>
     </div>
-    <div class="zone zone-blue" id="zone-blue"></div>
+    <div class="side b"><h4>BLUE 副審</h4><div class="remotes" id="ref-blue"></div></div>
   </div>
 
   <div class="lower">
-    <section class="box">
-      <h3>賽事紀錄</h3>
-      <ol class="log js-log" id="log"></ol>
-    </section>
-    <section class="box">
-      <h3>操作流程與硬體對接</h3>
-      <div class="help">
-        <div>
-          <ol>
-            <li>選手到操作台<b>感應選手證</b>（點 RFID 或刷卡），再按自己位置的彩色鈕入列。按錯就重新感應再按，會直接覆寫。不滿五人也能開賽。</li>
-            <li>主審按 <b>▶</b> 開賽：開賽音響起、球門 LED 亮白燈。</li>
-            <li>副審記錄：GOAL 得分、▲ 防守犯規、STRIKER FOUL 進攻犯規（記在對手）。紅藍兩隊的得分音與犯規音不同。</li>
-            <li>賽中選手按自己的位置鈕即<b>棄權</b>，卡片轉灰並出現白旗。前鋒棄權時主審遙控器會震動，確認交接觸碰完成後按該隊 <b>STRIKER CHANGE</b>。</li>
-            <li>主審按 <b>❚❚</b> 終場（時間歸零也會自動終場），再按一次關閉球門燈。</li>
-            <li>兩顆 STRIKER CHANGE <b>同時按</b>即重置，準備下一場。</li>
-          </ol>
-          <p class="note">多螢幕：在本頁網址最後加上 <kbd>#red-screen</kbd>、<kbd>#score-screen</kbd>、<kbd>#blue-screen</kbd> 各開一個分頁，拖到三台外接螢幕並全螢幕。同一台電腦的分頁會即時同步。</p>
-        </div>
-        <div>
-          <table class="keys">
-            <tr><td>紅隊操作台</td><td><kbd>1</kbd>–<kbd>5</kbd>　Striker / Guide / Libero / Sweeper / Keeper</td></tr>
-            <tr><td>藍隊操作台</td><td><kbd>6</kbd>–<kbd>0</kbd>　同上</td></tr>
-            <tr><td>主審</td><td><kbd>G</kbd> 開始　<kbd>H</kbd> 終場／關燈　<kbd>Z</kbd> 紅前鋒交接　<kbd>X</kbd> 藍前鋒交接　<kbd>Z</kbd>+<kbd>X</kbd> 重置</td></tr>
-            <tr><td>紅隊副審</td><td><kbd>Q</kbd> 得分　<kbd>W</kbd> 得分−1　<kbd>A</kbd> 防守犯規　<kbd>S</kbd> 犯規−1　<kbd>D</kbd> 進攻犯規</td></tr>
-            <tr><td>藍隊副審</td><td><kbd>U</kbd> 得分　<kbd>I</kbd> 得分−1　<kbd>J</kbd> 防守犯規　<kbd>K</kbd> 犯規−1　<kbd>L</kbd> 進攻犯規</td></tr>
-            <tr><td>RFID 讀卡機</td><td>USB 鍵盤模式（輸入卡號＋Enter）直接接上即可，系統依卡號判斷是哪一隊的選手。</td></tr>
-          </table>
-          <p class="note">不想做實體硬體：用「電腦操作」頁，一台筆電滑鼠點選就能完成整場；或接 PS4 手把，主審手把在前鋒棄權時會震動。</p>
-          <p class="note">街機按鈕接 USB 編碼器（Zero Delay 這類）並設成上面的按鍵，就能做出跟影片一樣的實體操作台；遙控器可用無線鍵盤模組。</p>
-        </div>
-      </div>
+    <section class="box"><h3>賽事紀錄</h3><ol class="log js-log"></ol></section>
+    <section class="box help">
+      <h3>操作方式</h3>
+      <ol>
+        <li>主審按 <b>▶</b> 開賽：開賽音響起、球門 LED 亮白燈。</li>
+        <li>副審記錄：GOAL 得分、▲ 防守犯規、STRIKER FOUL 進攻犯規（記在對手）。紅藍兩隊的得分音與犯規音不同。</li>
+        <li>主審按 <b>❚❚</b> 終場（時間歸零也會自動終場），再按一次關閉球門燈。</li>
+        <li>按 <b>RESET</b> 兩下重置，準備下一場。</li>
+      </ol>
+      <table class="keys">
+        <tr><td>主審</td><td><kbd>G</kbd> 開始　<kbd>H</kbd> 終場／關燈　<kbd>Z</kbd>+<kbd>X</kbd> 同按重置</td></tr>
+        <tr><td>紅隊副審</td><td><kbd>Q</kbd> 得分　<kbd>W</kbd> 得分−1　<kbd>A</kbd> 防守犯規　<kbd>S</kbd> 犯規−1　<kbd>D</kbd> 進攻犯規</td></tr>
+        <tr><td>藍隊副審</td><td><kbd>U</kbd> 得分　<kbd>I</kbd> 得分−1　<kbd>J</kbd> 防守犯規　<kbd>K</kbd> 犯規−1　<kbd>L</kbd> 進攻犯規</td></tr>
+      </table>
+      <p class="note">接外接螢幕：在本頁網址最後加上 <kbd>#score-screen</kbd> 另開一個分頁，拖到螢幕上全螢幕，同一台電腦會即時同步。</p>
     </section>
   </div>
   <section class="box" style="margin-top:18px"><h3>遊戲搖桿 PS4 · PS5 · Xbox</h3><div class="js-gp"></div></section>
@@ -450,31 +301,29 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
 <section id="v-control" class="wrap" hidden>
   <div class="cp-status">
     <div class="cp-team r"><span class="cp-score" id="cp-score-red">0</span><div><h2 id="cp-name-red"></h2><span class="cp-foul" id="cp-foul-red"></span></div></div>
-    <div class="cp-clock"><b class="js-timer">03:00:00</b><span class="pill" id="cp-phase" data-phase="setup">賽前準備</span></div>
+    <div class="cp-clock"><b class="js-timer">03:00:00</b><span class="pill js-phase" data-phase="setup">賽前準備</span></div>
     <div class="cp-team b"><span class="cp-score" id="cp-score-blue">0</span><div><h2 id="cp-name-blue"></h2><span class="cp-foul" id="cp-foul-blue"></span></div></div>
   </div>
   <div class="cp-grid">
     <div class="cp-col" id="cp-red"></div>
     <div class="cp-col">
       <section class="cp-card"><h3>主審</h3>
-        <div class="bigs" id="cp-main">
+        <div class="bigs">
           <button class="big go" type="button" data-cp="start">▶ 開始／繼續<small>START · 鍵盤 G</small></button>
           <button class="big stop" type="button" data-cp="end">❚❚ 終場／關燈<small>END · 鍵盤 H</small></button>
-          <button class="big" type="button" data-cp="change" data-side="red">紅隊前鋒交接<small>RED STRIKER CHANGE · Z</small></button>
-          <button class="big" type="button" data-cp="change" data-side="blue">藍隊前鋒交接<small>BLUE STRIKER CHANGE · X</small></button>
           <button class="big" type="button" data-cp="pause" id="cp-pause">暫停<small>暫停計時</small></button>
-          <button class="big" type="button" data-cp="undo" id="cp-undo">復原上一步<small>按錯時使用</small></button>
-          <button class="big wide" type="button" data-cp="reset" id="cp-reset">重置比賽，準備下一場<small>按兩下確認 · Z+X 同按</small></button>
+          <button class="big js-undo" type="button" data-cp="undo">復原上一步<small>按錯時使用</small></button>
+          <button class="big wide" type="button" data-cp="reset">重置比賽，準備下一場<small>按兩下確認 · Z+X 同按</small></button>
         </div>
       </section>
-      <section class="cp-card"><h3>遊戲搖桿 <span>PS4 · PS5 · Xbox</span></h3><div class="js-gp"></div></section>
       <section class="cp-card"><h3>賽事紀錄</h3><ol class="log js-log"></ol></section>
     </div>
     <div class="cp-col" id="cp-blue"></div>
   </div>
+  <section class="cp-card" style="margin-top:16px"><h3>遊戲搖桿 <span>PS4 · PS5 · Xbox</span></h3><div class="js-gp"></div></section>
 </section>
 
-<!-- ================= FULL DISPLAY ================= -->
+<!-- ================= FULL SCORE SCREEN ================= -->
 <section id="v-full" hidden>
   <div class="full-wrap" id="full-wrap"></div>
   <div class="full-tools">
@@ -483,25 +332,7 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
   </div>
 </section>
 
-<!-- ================= ROSTER ================= -->
-<section id="v-roster" class="wrap" hidden>
-  <div class="rcols" id="roster-cols"></div>
-  <div class="box io">
-    <h3>資料備份與搬移</h3>
-    <p class="note" style="margin:0 0 8px">名冊、隊伍設定與目前比分都存在這台電腦的瀏覽器裡。要搬到比賽現場的電腦，先在這裡匯出，再到另一台貼上匯入。</p>
-    <textarea id="io-text" placeholder="按「匯出」產生資料，或把資料貼在這裡再按「匯入」"></textarea>
-    <div class="row">
-      <button class="opbtn" type="button" id="io-export">匯出並複製</button>
-      <button class="opbtn" type="button" id="io-import">匯入</button>
-      <span class="sep" style="flex:1"></span>
-      <button class="opbtn danger" type="button" id="io-demo">還原示範資料</button>
-    </div>
-  </div>
-</section>
-
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-
-<input type="file" id="file-in" accept="image/*" hidden>
 
 <script>
 (()=>{
@@ -509,113 +340,45 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pad=n=>String(n).padStart(2,'0');
-const uid=()=>Math.random().toString(36).slice(2,9);
-const WIN_ID=uid();
-const SIDES=['red','blue'];
-const OPP={red:'blue',blue:'red'};
-const SIDE_ZH={red:'紅隊',blue:'藍隊'};
-
-/* positions — label colors and arcade colors match the footage */
-const POS=[
-  {k:'coach',  label:'教練',    color:'#22318f'},
-  {k:'striker',label:'Striker', color:'#3fa53a', btn:'#35c442', btn2:'#1f7a28', key:0},
-  {k:'guide',  label:'Guide',   color:'#e0338f', btn:'#ff3b3b', btn2:'#a51616', key:1},
-  {k:'libero', label:'Libero',  color:'#2a63d6', btn:'#2f6bff', btn2:'#1638a0', key:2},
-  {k:'sweeper',label:'Sweeper', color:'#e2ac1e', btn:'#ffd21f', btn2:'#b08900', key:3},
-  {k:'keeper', label:'Keeper',  color:'#8d9098', btn:'#f4f4f4', btn2:'#a8acb3', key:4},
-];
-const POSMAP=Object.fromEntries(POS.map(p=>[p.k,p]));
-const PLAY_POS=POS.filter(p=>p.k!=='coach');
-
-/* ---------- generated artwork ---------- */
-const svgUri=s=>'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s);
-function avatar(side,coach,seed=0){
-  const jersey=coach?'#2b3446':(side==='red'?'#d8312c':'#2a6fe0');
-  const trim=coach?'#e8e8e8':'#ffffff';
-  const hair=['#1d1816','#2a211c','#141414','#3a2a20'][seed%4];
-  const skin=['#efcfb3','#e8c3a2','#f3d6bd','#dfb894'][(seed>>1)%4];
-  return svgUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 360">
-  <path d="M14 360 C22 282 82 252 150 252 C218 252 278 282 286 360Z" fill="${jersey}"/>
-  <path d="M110 256 L150 300 L190 256" fill="none" stroke="${trim}" stroke-width="10"/>
-  ${coach?'':`<rect x="60" y="318" width="180" height="14" fill="${trim}" opacity=".9"/>`}
-  <rect x="128" y="212" width="44" height="52" rx="14" fill="${skin}" filter="brightness(.92)"/>
-  <ellipse cx="150" cy="150" rx="64" ry="76" fill="${skin}"/>
-  <path d="M86 140 C84 92 112 70 150 70 C192 70 218 96 214 142 C206 118 190 104 150 104 C116 104 96 116 86 140Z" fill="${hair}"/>
-  <ellipse cx="126" cy="156" rx="6" ry="7" fill="#2b2421"/><ellipse cx="174" cy="156" rx="6" ry="7" fill="#2b2421"/>
-  <path d="M132 196 Q150 206 168 196" fill="none" stroke="#a86a58" stroke-width="5" stroke-linecap="round"/>
-  </svg>`);
-}
-function emblem(side,code){
-  const base=side==='red'?'#8a1717':'#0f3d6e', hi=side==='red'?'#e8403a':'#4a9bff';
-  const c=esc((code||'').slice(0,8).toUpperCase());
-  return svgUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
-  <circle cx="100" cy="100" r="97" fill="#fff"/><circle cx="100" cy="100" r="90" fill="${base}"/>
-  <circle cx="100" cy="100" r="78" fill="none" stroke="#fff" stroke-width="4"/>
-  <g fill="#fff"><path d="M100 92 L36 66 L48 84 L24 82 L46 100 L30 106 L100 124Z"/>
-  <path d="M100 92 L164 66 L152 84 L176 82 L154 100 L170 106 L100 124Z"/>
-  <path d="M100 64 L113 98 L100 136 L87 98Z" fill="${hi}" stroke="#fff" stroke-width="3"/></g>
-  <g stroke="#fff" stroke-width="3" fill="none"><circle cx="76" cy="46" r="7"/><circle cx="124" cy="46" r="7"/><path d="M83 46 H117"/></g>
-  <text x="100" y="160" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-size="${c.length>6?18:22}" font-weight="900" fill="#fff" letter-spacing="2">${c}</text>
-  </svg>`);
-}
-const FLAG=`<svg class="card-flag" viewBox="0 0 200 200" aria-hidden="true"><rect x="40" y="20" width="9" height="170" rx="4" fill="#ddd" stroke="#777" stroke-width="2"/>
-<path d="M49 30 C80 16 104 44 134 32 C152 25 164 30 176 36 L176 104 C162 96 150 92 132 100 C102 112 80 84 49 98Z" fill="#fff" stroke="#888" stroke-width="3"/>
-<path d="M62 52 C86 44 104 64 128 56 M62 72 C86 64 104 84 128 76" stroke="#ccc" stroke-width="3" fill="none"/></svg>`;
+const WIN_ID=Math.random().toString(36).slice(2,10);
+const SIDES=['red','blue'], OPP={red:'blue',blue:'red'}, SIDE_ZH={red:'紅隊',blue:'藍隊'};
 
 /* ---------- state ---------- */
-function demoState(){
-  const mk=(side,arr)=>arr.map((a,i)=>({id:side[0]+uid(),name:a[0],en:a[1],card:a[2],coach:!!a[3],photo:null,seed:i+(side==='blue'?3:0)}));
-  const roster={
-    red:mk('red',[['林子傑','TZU-CHIEH LIN','04A1C301',1],['陳柏宇','PO-YU CHEN','04A1C302'],['黃冠廷','KUAN-TING HUANG','04A1C303'],['張家豪','CHIA-HAO CHANG','04A1C304'],['李承恩','CHENG-EN LEE','04A1C305'],['王宥翔','YU-HSIANG WANG','04A1C306'],['周品辰','PIN-CHEN CHOU','04A1C307']]),
-    blue:mk('blue',[['吳宗翰','TSUNG-HAN WU','04B2D401',1],['劉品睿','PIN-JUI LIU','04B2D402'],['蔡昀廷','YUN-TING TSAI','04B2D403'],['楊書豪','SHU-HAO YANG','04B2D404'],['許哲維','CHE-WEI HSU','04B2D405'],['鄭宇恩','YU-EN CHENG','04B2D406'],['謝承佑','CHENG-YU HSIEH','04B2D407']]),
-  };
-  const s={v:1,cfg:{duration:180,sound:true,voice:true},
-    teams:{red:{name:'新竹飛鷹',branch:'新竹分會',sub:'(東區分部)',code:'HAWKS',logo:null},blue:{name:'台中雷霆',branch:'台中分會',sub:'(西屯分部)',code:'THUNDER',logo:null}},
-    roster, match:null};
-  s.match=newMatch(s);
-  // sample lineup so the first view shows a working system
-  SIDES.forEach(side=>{const r=roster[side];s.match.lineup[side]={coach:r[0].id,striker:r[1].id,guide:r[2].id,libero:r[3].id,sweeper:r[4].id,keeper:r[5].id};});
-  s.match.log=[{t:'賽前',side:null,text:'已載入示範名冊與先發陣容（可到「名冊與隊伍」修改）'}];
-  return s;
-}
-function newMatch(s){
-  const emptyLine=()=>({coach:null,striker:null,guide:null,libero:null,sweeper:null,keeper:null});
-  return {phase:'setup',remaining:s.cfg.duration*1000,endAt:null,owner:null,
-    score:{red:0,blue:0},fouls:{red:0,blue:0},
-    lineup:{red:emptyLine(),blue:emptyLine()},status:{red:{},blue:{}},
-    strikerPending:{red:false,blue:false},led:'off',ringFlash:{red:0,blue:0},
-    flash:null,pendingTag:{red:null,blue:null},log:[]};
-}
-const STORE='fida-ds-replica-v1';
+function newMatch(s){return {phase:'setup',remaining:s.cfg.duration*1000,endAt:null,owner:null,score:{red:0,blue:0},fouls:{red:0,blue:0},led:'off',ringFlash:{red:0,blue:0},flash:null,log:[]};}
+function defaultState(){const s={v:2,cfg:{duration:180,sound:true,voice:true},teams:{red:{name:'新竹飛鷹'},blue:{name:'台中雷霆'}},match:null};s.match=newMatch(s);return s;}
+const STORE='fida-ds-score-v2';
 let state;
-try{const raw=localStorage.getItem(STORE); state=raw?JSON.parse(raw):null;}catch(e){state=null;}
-if(!state||state.v!==1||!state.match) state=demoState();
-
+try{const raw=localStorage.getItem(STORE);state=raw?JSON.parse(raw):null;}catch(e){state=null;}
+if(!state||state.v!==2||!state.match)state=defaultState();
 let saveT=null;
-function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(STORE,JSON.stringify(state));}catch(e){}},250);}
-let bc=null; try{bc=new BroadcastChannel('fida-ds-replica');}catch(e){}
-function broadcast(){ if(bc){try{bc.postMessage({from:WIN_ID,state});}catch(e){}} }
+function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(STORE,JSON.stringify(state));}catch(e){}},200);}
+let bc=null;try{bc=new BroadcastChannel('fida-ds-score');}catch(e){}
 const peers={};
-if(bc) bc.onmessage=ev=>{ const d=ev.data; if(!d||d.from===WIN_ID) return; if(d.hb){peers[d.from]=Object.assign({t:Date.now()},d.hb);return;} state=d.state; save(); renderAll(true); };
-function commit(){ save(); broadcast(); renderAll(); }
+function broadcast(){if(bc){try{bc.postMessage({from:WIN_ID,state});}catch(e){}}}
+if(bc)bc.onmessage=ev=>{const d=ev.data;if(!d||d.from===WIN_ID)return;if(d.hb){peers[d.from]=Object.assign({t:Date.now()},d.hb);return;}state=d.state;save();renderAll();};
+function commit(){save();broadcast();renderAll();}
 
 /* ---------- helpers ---------- */
-const player=(side,id)=>state.roster[side].find(p=>p.id===id)||null;
-const photoOf=(side,p)=>p.photo||avatar(side,p.coach,p.seed||0);
-const logoOf=side=>state.teams[side].logo||emblem(side,state.teams[side].code);
-function rawRemaining(){const m=state.match; return m.phase==='running'?m.endAt-Date.now():m.remaining;}
-const remaining=()=>Math.max(0,rawRemaining());
+const tname=s=>state.teams[s].name||SIDE_ZH[s];
+function remaining(){const m=state.match;return Math.max(0,m.phase==='running'?m.endAt-Date.now():m.remaining);}
 function fmtClock(ms){const cs=Math.floor(ms/10);return pad(Math.floor(cs/6000))+':'+pad(Math.floor(cs/100)%60)+':'+pad(cs%100);}
-function gameTime(){const m=state.match;if(m.phase==='setup')return'賽前';const el=state.cfg.duration*1000-remaining();const s=Math.floor(el/1000);return pad(Math.floor(s/60))+':'+pad(s%60);}
-function log(side,text){state.match.log.unshift({t:gameTime(),side,text});if(state.match.log.length>80)state.match.log.length=80;}
+function gameTime(){if(state.match.phase==='setup')return'賽前';const s=Math.floor((state.cfg.duration*1000-remaining())/1000);return pad(Math.floor(s/60))+':'+pad(s%60);}
+function log(side,text){const L=state.match.log;L.unshift({t:gameTime(),side,text});if(L.length>100)L.length=100;}
 function flash(type,team,title,sub){state.match.flash={type,team,title,sub,at:Date.now()};}
 let toastT=null;
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);}
+/* two-step confirm: first press arms the button, second press within 2.5 s runs fn */
+function setLabel(btn,t){if(!t)return;const n=btn.firstChild;if(n&&n.nodeType===3&&btn.querySelector('small'))n.textContent=t;else if(!btn.querySelector('i,small'))btn.textContent=t;}
+function arm(btn,label,armedLabel,fn){
+  if(btn.dataset.armed!=='1'){btn.dataset.armed='1';btn.classList.add('armed');setLabel(btn,armedLabel);clearTimeout(btn._t);
+    btn._t=setTimeout(()=>{btn.dataset.armed='';btn.classList.remove('armed');setLabel(btn,label);},2500);return false;}
+  clearTimeout(btn._t);btn.dataset.armed='';btn.classList.remove('armed');setLabel(btn,label);fn();return true;
+}
 
 /* ---------- audio ---------- */
 let AC=null;
 function ac(){try{if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();}catch(e){AC=null;}return AC;}
-function tone(f,t0,dur,type='square',vol=.16,f2){const a=ac();if(!a)return;const t=a.currentTime+t0;const o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.012);g.gain.setValueAtTime(vol,t+dur-.04);g.gain.linearRampToValueAtTime(0,t+dur);o.connect(g).connect(a.destination);o.start(t);o.stop(t+dur+.02);}
+function tone(f,t0,dur,type='square',vol=.16,f2){const a=ac();if(!a)return;const t=a.currentTime+t0,o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.012);g.gain.setValueAtTime(vol,t+dur-.04);g.gain.linearRampToValueAtTime(0,t+dur);o.connect(g).connect(a.destination);o.start(t);o.stop(t+dur+.02);}
 const SFX={
   start(){[0,.55,1.1].forEach(t=>tone(880,t,.16));tone(1320,1.65,.75);},
   resume(){tone(1046,0,.12);tone(1318,.14,.18);},
@@ -624,598 +387,296 @@ const SFX={
   foul_red(){tone(196,0,.3,'sawtooth',.18);tone(196,.38,.3,'sawtooth',.18);},
   foul_blue(){[0,.18,.36].forEach(t=>tone(311,t,.13,'sawtooth',.16));},
   end(){tone(440,0,1.9,'sawtooth',.18);tone(444,0,1.9,'square',.07);},
-  forfeit(){tone(700,0,.55,'triangle',.28,230);},
-  change(){tone(784,0,.14,'sine',.3);tone(988,.16,.14,'sine',.3);tone(1175,.32,.3,'sine',.3);},
-  tag(){tone(1760,0,.07,'square',.1);},
-  assign(){tone(1320,0,.06,'square',.1);tone(1760,.07,.08,'square',.1);},
+  click(){tone(1760,0,.07,'square',.1);},
   reset(){tone(600,0,.1);tone(400,.12,.18);},
   err(){tone(160,0,.18,'square',.1);},
 };
-function sfx(name){if(state.cfg.sound&&SFX[name])SFX[name]();}
+function sfx(n){if(state.cfg.sound&&SFX[n])SFX[n]();}
 function say(text,delay=0){if(!state.cfg.voice||!('speechSynthesis' in window))return;setTimeout(()=>{try{const u=new SpeechSynthesisUtterance(text);u.lang='zh-TW';u.rate=1.05;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}},delay);}
 
 /* ---------- actions ---------- */
 const undoStack=[];
 function act(type,side,arg){
-  const m=state.match, before=JSON.stringify(m);
-  const tn=side?state.teams[side].name:'';
-  const live=m.phase==='running'||m.phase==='paused';
+  const m=state.match,before=JSON.stringify(m),live=m.phase==='running'||m.phase==='paused';
   let ok=false;
   switch(type){
-    case 'tag':{
-      const p=player(side,arg); if(!p) break;
-      if(m.phase!=='setup'){toast('比賽已開始，無法再登錄選手');sfx('err');return;}
-      if(p.coach){m.lineup[side].coach=p.id;m.pendingTag[side]=null;log(side,`${tn} 教練 ${p.name} 報到`);sfx('assign');}
-      else{m.pendingTag[side]=p.id;sfx('tag');}
-      ok=true;break;}
-    case 'pos':{
-      const pos=arg, line=m.lineup[side];
-      if(m.phase==='setup'){
-        const pid=m.pendingTag[side];
-        if(!pid){toast(`${SIDE_ZH[side]}：請先感應選手證，再按位置鈕`);sfx('err');return;}
-        Object.keys(line).forEach(k=>{if(line[k]===pid)line[k]=null;});
-        line[pos]=pid; delete m.status[side][pos]; m.pendingTag[side]=null;
-        log(side,`${tn} ${player(side,pid).name} → ${POSMAP[pos].label}`); sfx('assign'); ok=true;
-      }else if(live){
-        const pid=line[pos];
-        if(!pid){toast(`${SIDE_ZH[side]} ${POSMAP[pos].label} 沒有選手`);sfx('err');return;}
-        const st=m.status[side][pos]||(m.status[side][pos]={});
-        if(st.forfeit){toast(`${player(side,pid).name} 已經棄權`);return;}
-        st.forfeit=true;
-        const nm=player(side,pid).name;
-        flash('forfeit',side,'選手棄權',`${nm} · ${POSMAP[pos].label}`);
-        log(side,`${tn} ${POSMAP[pos].label} ${nm} 棄權`);
-        sfx('forfeit');
-        if(pos==='striker'){m.strikerPending[side]=true;try{navigator.vibrate&&navigator.vibrate([200,100,200,100,400]);}catch(e){} say(`${SIDE_ZH[side]}前鋒棄權，請準備交接`,500);}
-        else say(`${SIDE_ZH[side]}選手棄權`,500);
-        ok=true;
-      }else{toast('比賽已結束，請重置後再登錄');return;}
-      break;}
-    case 'assign':{
-      if(m.phase!=='setup'){toast('比賽已開始，無法再更換陣容');return;}
-      const line=m.lineup[side],pos=arg.pos,pid=arg.pid||null;
-      if(pid)Object.keys(line).forEach(k=>{if(line[k]===pid)line[k]=null;});
-      line[pos]=pid;delete m.status[side][pos];if(m.pendingTag[side]===pid)m.pendingTag[side]=null;
-      const pp=pid&&player(side,pid);
-      log(side,pp?`${tn} ${pp.name} → ${POSMAP[pos].label}`:`${tn} ${POSMAP[pos].label} 清空`);sfx('assign');ok=true;break;}
-    case 'start':{
-      if(m.phase==='setup'){m.phase='running';m.endAt=Date.now()+m.remaining;m.owner=WIN_ID;m.led='white';m.pendingTag={red:null,blue:null};flash('start',null,'START','比賽開始');log(null,'比賽開始，球門 LED 亮起');sfx('start');ok=true;}
+    case 'start':
+      if(m.phase==='setup'){m.phase='running';m.endAt=Date.now()+m.remaining;m.owner=WIN_ID;m.led='white';flash('start',null,'START','比賽開始');log(null,'比賽開始，球門 LED 亮起');sfx('start');ok=true;}
       else if(m.phase==='paused'){m.phase='running';m.endAt=Date.now()+m.remaining;m.owner=WIN_ID;log(null,'比賽繼續');sfx('resume');ok=true;}
       else if(m.phase==='running'){toast('比賽進行中');return;}
-      else{toast('比賽已結束，同時按兩顆 STRIKER CHANGE 重置');sfx('err');return;}
-      break;}
-    case 'pause':{
-      if(m.phase==='running'){m.remaining=remaining();m.endAt=null;m.phase='paused';log(null,'比賽暫停');ok=true;}
-      else if(m.phase==='paused'){return act('start');}
-      break;}
-    case 'end':{
-      if(live){m.remaining=remaining();m.endAt=null;m.phase='ended';m.strikerPending={red:false,blue:false};
-        const r=m.score.red,b=m.score.blue;
-        flash('end',null,'GAME OVER',`${state.teams.red.name} ${r} : ${b} ${state.teams.blue.name}`);
-        log(null,`${arg&&arg.auto?'時間到，':''}比賽結束 ${r}:${b}`);sfx('end');ok=true;}
-      else if(m.phase==='ended'){m.phase='off';m.led='off';log(null,'主審關閉球門 LED');sfx('tag');ok=true;}
-      else if(m.phase==='off'){toast('同時按兩顆 STRIKER CHANGE 重置，準備下一場');return;}
+      else{toast('比賽已結束，請按 RESET 重置');sfx('err');return;}
+      break;
+    case 'pause':
+      if(m.phase==='running'){m.remaining=remaining();m.endAt=null;m.phase='paused';log(null,'比賽暫停');sfx('click');ok=true;}
+      else if(m.phase==='paused')return act('start');
+      else return;
+      break;
+    case 'end':
+      if(live){m.remaining=remaining();m.endAt=null;m.phase='ended';const r=m.score.red,b=m.score.blue;
+        flash('end',null,'GAME OVER',`${tname('red')} ${r} : ${b} ${tname('blue')}`);log(null,`${arg&&arg.auto?'時間到，':''}比賽結束 ${r}:${b}`);sfx('end');
+        say(`比賽結束，${tname('red')}${r}比${b}${tname('blue')}`,2000);
+        if(arg&&arg.auto)gpRumbleMain(900);ok=true;}
+      else if(m.phase==='ended'){m.phase='off';m.led='off';log(null,'主審關閉球門 LED');sfx('click');ok=true;}
+      else if(m.phase==='off'){toast('請按 RESET 重置，準備下一場');return;}
       else{toast('比賽尚未開始');return;}
-      break;}
+      break;
     case 'goal':case 'goalUndo':case 'defFoul':case 'foulDown':case 'atkFoul':{
       if(!live){toast('比賽進行中才能記錄');sfx('err');return;}
+      const tn=tname(side);
       if(type==='goal'){m.score[side]=Math.min(99,m.score[side]+1);m.ringFlash[side]=Date.now();flash('goal',side,'GOAL!',`${tn} 得分`);log(side,`${tn} 得分 → ${m.score.red}:${m.score.blue}`);sfx('goal_'+side);}
-      if(type==='goalUndo'){if(!m.score[side])return;m.score[side]--;log(side,`${tn} 得分修正 → ${m.score.red}:${m.score.blue}`);sfx('tag');}
+      if(type==='goalUndo'){if(!m.score[side])return;m.score[side]--;log(side,`${tn} 得分修正 → ${m.score.red}:${m.score.blue}`);sfx('click');}
       if(type==='defFoul'){m.fouls[side]++;flash('foul',side,'FOUL',`${tn} 防守犯規`);log(side,`${tn} 防守犯規（第 ${m.fouls[side]} 次）`);sfx('foul_'+side);}
-      if(type==='foulDown'){if(!m.fouls[side])return;m.fouls[side]--;log(side,`${tn} 犯規修正（${m.fouls[side]} 次）`);sfx('tag');}
-      if(type==='atkFoul'){const o=OPP[side],on=state.teams[o].name;m.fouls[o]++;flash('foul',o,'FOUL',`${on} 進攻犯規`);log(o,`${on} 前鋒進攻犯規（第 ${m.fouls[o]} 次）`);sfx('foul_'+o);}
+      if(type==='foulDown'){if(!m.fouls[side])return;m.fouls[side]--;log(side,`${tn} 犯規修正（${m.fouls[side]} 次）`);sfx('click');}
+      if(type==='atkFoul'){const o=OPP[side],on=tname(o);m.fouls[o]++;flash('foul',o,'FOUL',`${on} 進攻犯規`);log(o,`${on} 進攻犯規（第 ${m.fouls[o]} 次）`);sfx('foul_'+o);}
       ok=true;break;}
-    case 'change':{
-      if(!m.strikerPending[side]){toast(`${SIDE_ZH[side]}目前沒有待交接的前鋒`);return;}
-      m.strikerPending[side]=false;(m.status[side].striker||(m.status[side].striker={})).changed=true;
-      flash('change',side,'STRIKER CHANGE',`${tn} 前鋒已更換`);log(side,`${tn} 前鋒交接完成`);sfx('change');say(`${SIDE_ZH[side]}前鋒已更換`,450);ok=true;break;}
-    case 'reset':{
-      state.match=newMatch(state);state.match.log=[{t:'賽前',side:null,text:'系統已重置，請選手重新感應選手證'}];sfx('reset');undoStack.length=0;commit();toast('已重置，準備下一場');return;}
+    case 'reset':
+      state.match=newMatch(state);state.match.log=[{t:'賽前',side:null,text:'系統已重置，準備下一場'}];undoStack.length=0;sfx('reset');commit();toast('已重置，準備下一場');return;
   }
   if(ok){undoStack.push(before);if(undoStack.length>60)undoStack.shift();commit();}
 }
 function undo(){
-  const snap=undoStack.pop(); if(!snap){toast('沒有可以復原的動作');return;}
-  const prev=JSON.parse(snap), cur=state.match;
-  if(prev.phase===cur.phase&&cur.phase==='running'){prev.endAt=cur.endAt;prev.owner=cur.owner;}
-  prev.flash=null; state.match=prev; commit(); toast('已復原上一步');
+  const snap=undoStack.pop();if(!snap){toast('沒有可以復原的動作');return;}
+  const prev=JSON.parse(snap),cur=state.match;
+  if(prev.phase==='running'&&cur.phase==='running'){prev.endAt=cur.endAt;prev.owner=cur.owner;}
+  prev.flash=null;state.match=prev;commit();toast('已復原上一步');
 }
-function cardScan(code){
-  const c=code.trim().toUpperCase(); if(!c)return;
-  for(const side of SIDES){const p=state.roster[side].find(x=>(x.card||'').toUpperCase()===c);if(p){act('tag',side,p.id);return;}}
-  toast(`卡號 ${c} 尚未登錄，請到「名冊與隊伍」新增`);sfx('err');
-}
-/* simultaneous STRIKER CHANGE = reset */
-const chg={side:null,timer:null};
-function pressChange(side){
-  if(chg.timer&&chg.side!==side){clearTimeout(chg.timer);chg.timer=null;chg.side=null;act('reset');return;}
-  if(chg.timer)return;
-  chg.side=side;chg.timer=setTimeout(()=>{chg.timer=null;chg.side=null;act('change',side);},420);
+/* reset combo: the two halves (Z+X keys, L1+R1 on a gamepad) within 450 ms */
+let comboT=null,comboKey=null;
+function comboPress(k){
+  if(comboT&&comboKey!==k){clearTimeout(comboT);comboT=null;comboKey=null;act('reset');return;}
+  comboKey=k;clearTimeout(comboT);comboT=setTimeout(()=>{comboT=null;comboKey=null;},450);
 }
 
-/* ---------- stages (1920×1080 displays) ---------- */
+/* ---------- score stage ---------- */
 const stages=[];
-function mountStage(wrap,kind){
-  wrap.innerHTML='';
-  const st=document.createElement('div'); st.className='stage'; st.dataset.kind=kind; wrap.appendChild(st);
-  const rec={wrap,st,kind,ledKey:null,full:wrap.id==='full-wrap'};
-  if(kind==='score'){
-    st.innerHTML=`<div class="sb">
-      <div class="sb-deco"><i class="l l3"></i><i class="l l1"></i><i class="l l2"></i><i class="burst b1"></i><i class="burst b2"></i></div>
-      <div class="sb-top"><div class="sb-team r js-name-red"></div><div class="sb-clock js-timer">03:00:00</div><div class="sb-team b js-name-blue"></div></div>
-      <div class="sb-mid">
-        <div class="sb-foul r"><div class="sb-fn" data-fn="red">00</div><div class="sb-blocks" data-fb="red">${'<i></i>'.repeat(5)}</div></div>
-        <div class="sb-panel"><canvas width="1400" height="520"></canvas></div>
-        <div class="sb-foul b"><div class="sb-fn" data-fn="blue">00</div><div class="sb-blocks" data-fb="blue">${'<i></i>'.repeat(5)}</div></div>
-      </div>
-      <div class="sb-phase"></div>
-      <div class="banner" data-side="score"></div></div>`;
-  }
-  stages.push(rec); fit(rec); return rec;
-}
 const ro=new ResizeObserver(es=>es.forEach(e=>{const r=stages.find(s=>s.wrap===e.target);if(r)fit(r);}));
-function fit(r){
-  const w=r.wrap.clientWidth,h=r.wrap.clientHeight; if(!w||!h)return;
-  const k=r.full?Math.min(w/1920,h/1080):w/1920;
-  r.st.style.transform=`scale(${k})`;
-  r.st.style.setProperty('--ox',((w-1920*k)/2)+'px'); r.st.style.setProperty('--oy',((h-1080*k)/2)+'px');
-}
-
-/* LED dot-matrix score */
-const SEG={0:'abcdef',1:'bc',2:'abged',3:'abgcd',4:'fgbc',5:'afgcd',6:'afgedc',7:'abc',8:'abcdefg',9:'abcdfg'};
-function digitCells(d,co,ro,set){
-  const W=11,H=22,T=2,M=10,s=SEG[d];
-  const add=(c0,c1,r0,r1)=>{for(let c=c0;c<=c1;c++)for(let r=r0;r<=r1;r++)set.add((co+c)+','+(ro+r));};
-  if(s.includes('a'))add(0,W-1,0,T-1);
-  if(s.includes('d'))add(0,W-1,H-T,H-1);
-  if(s.includes('g'))add(0,W-1,M,M+T-1);
-  if(s.includes('f'))add(0,T-1,0,M+T-1);
-  if(s.includes('e'))add(0,T-1,M,H-1);
-  if(s.includes('b'))add(W-T,W-1,0,M+T-1);
-  if(s.includes('c'))add(W-T,W-1,M,H-1);
-}
-function drawLED(cv,l,r){
-  const g=cv.getContext('2d'),COLS=70,ROWS=26,C=20; g.clearRect(0,0,cv.width,cv.height);
-  const on=new Set(), L=pad(l), R=pad(r);
-  digitCells(+L[0],4,2,on);digitCells(+L[1],18,2,on);digitCells(+R[0],41,2,on);digitCells(+R[1],55,2,on);
-  [8,17].forEach(rw=>{[[34,rw-1],[35,rw-1],[33,rw],[34,rw],[35,rw],[36,rw],[34,rw+1],[35,rw+1]].forEach(([c,y])=>on.add(c+','+y));});
-  g.fillStyle='#231f38';
-  for(let c=0;c<COLS;c++)for(let y=0;y<ROWS;y++){if(on.has(c+','+y))continue;g.beginPath();g.arc(c*C+10,y*C+10,6.2,0,7);g.fill();}
-  g.fillStyle='#f6f4ff';g.shadowColor='rgba(225,215,255,.95)';g.shadowBlur=12;
-  on.forEach(k=>{const[c,y]=k.split(',').map(Number);g.beginPath();g.arc(c*C+10,y*C+10,7,0,7);g.fill();});
-  g.shadowBlur=0;
-}
-
-function pennantSVG(side){
-  const t=state.teams[side], id='pg'+side+Math.random().toString(36).slice(2,6);
-  let tassels='';
-  for(let i=0;i<=10;i++){const x=10+i*21,y=560+i*20;tassels+=`<path d="M${x} ${y} l-6 26 q6 8 12 0z" fill="#d9a92c" stroke="#8a6512" stroke-width="1.5"/>`;}
-  for(let i=0;i<=10;i++){const x=430-i*21,y=560+i*20;tassels+=`<path d="M${x} ${y} l-6 26 q6 8 12 0z" fill="#d9a92c" stroke="#8a6512" stroke-width="1.5"/>`;}
-  return `<svg viewBox="0 -24 440 820" aria-hidden="true">
-  <defs><linearGradient id="${id}b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#fbe9ee"/><stop offset="1" stop-color="#f1c9d3"/></linearGradient>
-  <clipPath id="${id}c"><path d="M10 0 H430 V560 L220 762 L10 560Z"/></clipPath><clipPath id="${id}l"><circle cx="220" cy="312" r="128"/></clipPath></defs>
-  <rect x="-6" y="-22" width="452" height="16" rx="8" fill="#c9962a" stroke="#7a5610" stroke-width="2"/>
-  <circle cx="-8" cy="-14" r="13" fill="#e0b13e" stroke="#7a5610" stroke-width="2"/><circle cx="448" cy="-14" r="13" fill="#e0b13e" stroke="#7a5610" stroke-width="2"/>
-  ${tassels}
-  <g clip-path="url(#${id}c)"><rect x="0" y="0" width="440" height="800" fill="url(#${id}b)"/>
-  <rect x="0" y="0" width="220" height="132" fill="#d52b2b"/><rect x="220" y="0" width="220" height="132" fill="#2753c9"/>
-  <rect x="0" y="132" width="440" height="6" fill="#fff"/></g>
-  <path d="M10 0 H430 V560 L220 762 L10 560Z" fill="none" stroke="#d7b04a" stroke-width="6"/>
-  <circle cx="220" cy="312" r="138" fill="#fff" stroke="#e9d9a8" stroke-width="6"/>
-  <image href="${logoOf(side)}" x="92" y="184" width="256" height="256" preserveAspectRatio="xMidYMid slice" clip-path="url(#${id}l)"/>
-  <text x="220" y="532" text-anchor="middle" font-family="Noto Sans TC,sans-serif" font-weight="900" font-size="50" fill="#1e1e22" letter-spacing="3">${esc(t.branch)}</text>
-  <text x="220" y="582" text-anchor="middle" font-family="Noto Sans TC,sans-serif" font-weight="700" font-size="28" fill="#4b4b52">${esc(t.sub)}</text>
-  </svg>`;
-}
-function cardHTML(side,pos){
-  const m=state.match,pid=m.lineup[side][pos.k],p=pid&&player(side,pid),st=m.status[side][pos.k]||{};
-  if(!p) return `<div class="card empty" style="--pc:${pos.color}"><div class="card-top"></div><div class="card-bar"><span class="card-pos">${pos.label}</span><span class="card-name"></span></div></div>`;
-  const en=esc(p.en||'').split(/\s+/).filter(Boolean);
-  const enHTML=en.length>1?en.slice(0,-1).join(' ')+'<br>'+en[en.length-1]:en.join('');
-  const isCoach=pos.k==='coach';
-  return `<div class="card${isCoach?' coach':''}${st.forfeit?' forfeit':''}" style="--pc:${pos.color}">
-    <div class="card-top">
-      ${isCoach?'':`<div class="card-en">${enHTML}</div><div class="card-zh">${esc(p.name)}</div><img class="card-logo" src="${logoOf(side)}" alt="">`}
-      <img class="card-photo" src="${photoOf(side,p)}" alt="">
+function fit(r){const w=r.wrap.clientWidth,h=r.wrap.clientHeight;if(!w||!h)return;const k=r.full?Math.min(w/1920,h/1080):w/1920;r.st.style.transform=`scale(${k})`;r.st.style.setProperty('--ox',((w-1920*k)/2)+'px');r.st.style.setProperty('--oy',((h-1080*k)/2)+'px');}
+function mountStage(wrap){
+  wrap.innerHTML='';
+  const st=document.createElement('div');st.className='stage';wrap.appendChild(st);
+  st.innerHTML=`<div class="sb">
+    <div class="sb-deco"><i class="l l3"></i><i class="l l1"></i><i class="l l2"></i><i class="burst b1"></i><i class="burst b2"></i></div>
+    <div class="sb-top"><div class="sb-team r" data-tn="red"></div><div class="sb-clock js-timer">03:00:00</div><div class="sb-team b" data-tn="blue"></div></div>
+    <div class="sb-mid">
+      <div class="sb-foul"><div class="sb-fn" data-fn="red">00</div><div class="sb-blocks" data-fb="red">${'<i></i>'.repeat(5)}</div></div>
+      <div class="sb-panel"><canvas width="1400" height="520"></canvas></div>
+      <div class="sb-foul"><div class="sb-fn" data-fn="blue">00</div><div class="sb-blocks" data-fb="blue">${'<i></i>'.repeat(5)}</div></div>
     </div>
-    ${st.forfeit?FLAG:''}
-    ${st.changed?'<span class="card-badge">前鋒已交接</span>':''}
-    ${st.forfeit?'<span class="card-out">棄權</span>':''}
-    <div class="card-bar"><span class="card-pos">${pos.label}</span><span class="card-name">${esc(p.name)}</span></div>
-  </div>`;
+    <div class="sb-phase"></div><div class="banner"></div></div>`;
+  const rec={wrap,st,ledKey:null,full:wrap.id==='full-wrap'};stages.push(rec);fit(rec);ro.observe(wrap);lastTxt='';return rec;
 }
-function renderTeamStage(rec){
-  const side=rec.kind;
-  rec.st.innerHTML=`<div class="tv tv-${side}"><i class="tv-streak"></i><i class="tv-streak2"></i>
-    <div class="tv-title">${esc(state.teams[side].name)}</div>
-    <div class="tv-grid">${POS.map(p=>cardHTML(side,p)).join('')}</div>
-    <div class="pennant">${pennantSVG(side)}</div>
-    <div class="banner" data-side="${side}"></div></div>`;
-  rec.flashAt=null;
+const SEG={0:'abcdef',1:'bc',2:'abged',3:'abgcd',4:'fgbc',5:'afgcd',6:'afgedc',7:'abc',8:'abcdefg',9:'abcdfg'};
+function digitCells(d,co,r0,set){const W=11,H=22,T=2,M=10,s=SEG[d];const add=(c0,c1,a,b)=>{for(let c=c0;c<=c1;c++)for(let r=a;r<=b;r++)set.add((co+c)+','+(r0+r));};
+  if(s.includes('a'))add(0,W-1,0,T-1);if(s.includes('d'))add(0,W-1,H-T,H-1);if(s.includes('g'))add(0,W-1,M,M+T-1);
+  if(s.includes('f'))add(0,T-1,0,M+T-1);if(s.includes('e'))add(0,T-1,M,H-1);if(s.includes('b'))add(W-T,W-1,0,M+T-1);if(s.includes('c'))add(W-T,W-1,M,H-1);}
+function drawLED(cv,l,r){
+  const g=cv.getContext('2d'),COLS=70,ROWS=26,C=20;g.clearRect(0,0,cv.width,cv.height);
+  const on=new Set(),L=pad(l),R=pad(r);
+  digitCells(+L[0],4,2,on);digitCells(+L[1],18,2,on);digitCells(+R[0],41,2,on);digitCells(+R[1],55,2,on);
+  [8,17].forEach(rw=>[[34,rw-1],[35,rw-1],[33,rw],[34,rw],[35,rw],[36,rw],[34,rw+1],[35,rw+1]].forEach(([c,y])=>on.add(c+','+y)));
+  g.fillStyle='#231f38';for(let c=0;c<COLS;c++)for(let y=0;y<ROWS;y++){if(on.has(c+','+y))continue;g.beginPath();g.arc(c*C+10,y*C+10,6.2,0,7);g.fill();}
+  g.fillStyle='#f6f4ff';g.shadowColor='rgba(225,215,255,.95)';g.shadowBlur=12;
+  on.forEach(k=>{const[c,y]=k.split(',').map(Number);g.beginPath();g.arc(c*C+10,y*C+10,7,0,7);g.fill();});g.shadowBlur=0;
 }
 const PHASE_TXT={setup:'READY',running:'LIVE',paused:'PAUSED',ended:'FINAL',off:'FINAL'};
-function renderScoreStage(rec){
+const PHASE_ZH={setup:'賽前準備',running:'比賽進行中',paused:'暫停中',ended:'比賽結束',off:'比賽結束 · 燈號已關'};
+function renderStage(rec){
   const m=state.match,st=rec.st;
-  $('.js-name-red',st).textContent=state.teams.red.name;
-  $('.js-name-blue',st).textContent=state.teams.blue.name;
-  SIDES.forEach(s=>{$(`[data-fn="${s}"]`,st).textContent=pad(Math.min(99,m.fouls[s]));
-    $$(`[data-fb="${s}"] i`,st).forEach((b,i)=>b.classList.toggle('on',m.fouls[s]>i));});
-  const key=m.score.red+'-'+m.score.blue;
-  if(rec.ledKey!==key){drawLED($('canvas',st),m.score.red,m.score.blue);rec.ledKey=key;}
+  SIDES.forEach(s=>{$(`[data-tn="${s}"]`,st).textContent=tname(s);$(`[data-fn="${s}"]`,st).textContent=pad(Math.min(99,m.fouls[s]));$$(`[data-fb="${s}"] i`,st).forEach((b,i)=>b.classList.toggle('on',m.fouls[s]>i));});
+  const key=m.score.red+'-'+m.score.blue;if(rec.ledKey!==key){drawLED($('canvas',st),m.score.red,m.score.blue);rec.ledKey=key;}
   $('.sb-phase',st).textContent=PHASE_TXT[m.phase];
 }
-const FLASH_STYLE={goal:s=>s==='red'?['#e8403a','#fff']:['#2f80ff','#fff'],foul:()=>['#f2b43c','#1b1300'],forfeit:()=>['#f4f4f4','#222'],change:()=>['#3ccf7a','#05230f'],start:()=>['#ffffff','#111'],end:()=>['#111','#fff']};
+const FLASH_STYLE={goal:s=>s==='red'?['#e8403a','#fff']:['#2f80ff','#fff'],foul:()=>['#f2b43c','#1b1300'],start:()=>['#ffffff','#111'],end:()=>['#111','#fff']};
 function fillBanners(){
   const f=state.match.flash;
   $$('.banner').forEach(b=>{
     if(!f){b.innerHTML='';b.dataset.at='';return;}
     if(b.dataset.at===String(f.at))return;
-    const [bg,fg]=(FLASH_STYLE[f.type]||FLASH_STYLE.start)(f.team);
+    const[bg,fg]=(FLASH_STYLE[f.type]||FLASH_STYLE.start)(f.team);
     b.style.setProperty('--bc',bg);b.style.setProperty('--bt',fg);
-    b.innerHTML=`<div class="banner-box"><b>${esc(f.title)}</b><span>${esc(f.sub||'')}</span></div>`;
-    b.dataset.at=String(f.at); b.classList.remove('show');
+    b.innerHTML=`<div class="banner-box"><b>${esc(f.title)}</b><span>${esc(f.sub||'')}</span></div>`;b.dataset.at=String(f.at);b.classList.remove('show');
   });
 }
 
-/* ---------- consoles & remotes (overview) ---------- */
-function consoleHTML(side){
-  return `<div class="console console-${side}" style="--tc:var(--${side})" data-console="${side}">
-    <div class="c-top">
-      <button type="button" class="rfid" data-rfid="${side}" aria-expanded="false">RFID　感應選手證</button>
-      <input class="cardid" id="cardid-${side}" placeholder="或輸入卡號＋Enter" autocomplete="off" aria-label="${SIDE_ZH[side]}卡號">
-    </div>
-    <div class="c-face">
-      <span class="speaker" aria-hidden="true"></span>
-      <div class="c-screen"><div class="stage-wrap" data-kind="score"></div><div class="tag-pop" data-pop="${side}" hidden></div></div>
-      <span class="speaker" aria-hidden="true"></span>
-    </div>
-    <div class="arcades">${PLAY_POS.map(p=>`<button type="button" class="arc" data-arc="${side}" data-pos="${p.k}" style="--c:${p.btn};--c2:${p.btn2}" aria-label="${SIDE_ZH[side]} ${p.label}"><i></i><span>${p.label}</span><b class="dot"></b></button>`).join('')}</div>
-    <div class="plate">${side.toUpperCase()} ZONE</div>
-    <div class="picker" data-picker="${side}" hidden></div>
-  </div>
-  <div class="remotes">
-    <div class="remote"><h5>${side.toUpperCase()} 副審</h5>
-      <button class="mb big" type="button" data-hw="goal" data-side="${side}"><i></i><span>GOAL</span><small>得分</small></button>
-      <div class="rrow">
-        <button class="mb" type="button" data-hw="goalUndo" data-side="${side}"><i data-g="−"></i><span>SCORE</span><small>得分−1</small></button>
-        <button class="mb" type="button" data-hw="atkFoul" data-side="${side}"><i></i><span>STRIKER FOUL</span><small>進攻犯規</small></button>
-      </div>
-    </div>
-    <div class="remote"><h5>PENALTY</h5>
-      <button class="mb" type="button" data-hw="defFoul" data-side="${side}"><i data-g="▲"></i><span>DEFENSE</span><small>防守犯規</small></button>
-      <button class="mb" type="button" data-hw="foulDown" data-side="${side}"><i data-g="▼"></i><span>CORRECT</span><small>犯規−1</small></button>
-    </div>
+/* ---------- desk remotes ---------- */
+function refRemoteHTML(side){
+  return `<div class="remote"><h5>${side.toUpperCase()} 副審</h5>
+    <button class="mb lg" type="button" data-hw="goal" data-side="${side}"><i></i><span>GOAL</span><small>得分</small></button>
+    <div class="rrow">
+      <button class="mb" type="button" data-hw="goalUndo" data-side="${side}"><i data-g="−"></i><span>SCORE</span><small>得分−1</small></button>
+      <button class="mb" type="button" data-hw="atkFoul" data-side="${side}"><i></i><span>STRIKER FOUL</span><small>進攻犯規</small></button>
+    </div></div>
+  <div class="remote"><h5>PENALTY</h5>
+    <button class="mb" type="button" data-hw="defFoul" data-side="${side}"><i data-g="▲"></i><span>DEFENSE</span><small>防守犯規</small></button>
+    <button class="mb" type="button" data-hw="foulDown" data-side="${side}"><i data-g="▼"></i><span>CORRECT</span><small>犯規−1</small></button>
   </div>`;
 }
-function renderConsoles(){
-  const m=state.match;
-  SIDES.forEach(side=>{
-    const pop=$(`[data-pop="${side}"]`), pid=m.pendingTag[side], p=pid&&player(side,pid);
-    if(p){pop.hidden=false;pop.innerHTML=`<img src="${photoOf(side,p)}" alt=""><div><small>${esc(p.card)} · ${esc(state.teams[side].name)}</small><b>${esc(p.name)}</b><small>${esc(p.en)}</small><em>請按自己位置的按鈕</em></div>`;}
-    else{pop.hidden=true;pop.innerHTML='';}
-    $$(`[data-arc="${side}"]`).forEach(b=>{const k=b.dataset.pos;b.classList.toggle('filled',!!m.lineup[side][k]);b.classList.toggle('out',!!(m.status[side][k]||{}).forfeit);});
-  });
-  const pend=SIDES.filter(s=>m.strikerPending[s]);
-  $('#remote-main').classList.toggle('vib',pend.length>0);
-  $('#vib-note').textContent=pend.length?pend.map(s=>SIDE_ZH[s]).join('、')+' 前鋒棄權 · 交接後按 CHANGE':'';
-}
-function renderLog(){
-  const L=state.match.log;
-  const html=L.length?L.map(e=>`<li data-side="${e.side||''}"><time>${esc(e.t)}</time><i></i><span>${esc(e.text)}</span></li>`).join(''):'<li class="empty">尚無紀錄</li>';
-  $$('.js-log').forEach(el=>el.innerHTML=html);
-}
-const PHASE_ZH={setup:'賽前準備',running:'比賽進行中',paused:'暫停中',ended:'比賽結束',off:'比賽結束 · 燈號已關'};
-function renderOpbar(){
-  const m=state.match;
-  const pill=$('#phase-pill');pill.dataset.phase=m.phase;pill.textContent=PHASE_ZH[m.phase];
-  const d=$('#op-duration');d.value=String(state.cfg.duration);d.disabled=m.phase!=='setup';
-  const pb=$('#op-pause');pb.textContent=m.phase==='paused'?'繼續':'暫停';pb.disabled=!(m.phase==='running'||m.phase==='paused');
-  $('#op-undo').disabled=!undoStack.length;
-  $('#op-sound').checked=!!state.cfg.sound;$('#op-voice').checked=!!state.cfg.voice;
-}
-function renderAll(remote){
-  stages.forEach(r=>{if(r.kind==='score')renderScoreStage(r);else renderTeamStage(r);});
-  fillBanners();
-  if(route==='overview'){renderConsoles();renderLog();renderOpbar();}
-  if(route==='control'){renderControl(remote);renderLog();}
-  if(route==='roster'&&!(remote&&document.activeElement&&document.activeElement.closest('#v-roster')))renderRoster();
-}
-
-/* ---------- roster editor ---------- */
-function rowHTML(side,p){
-  return `<div class="prow" data-pid="${p.id}" data-side="${side}">
-    <button type="button" class="ph" data-photo="${p.id}" aria-label="上傳 ${esc(p.name)} 的照片" style="background:url('${photoOf(side,p)}') center/cover"></button>
-    <label for="p-${p.id}-name">中文姓名<input type="text" id="p-${p.id}-name" data-pf="name" value="${esc(p.name)}"></label>
-    <label for="p-${p.id}-en">英文姓名<input type="text" id="p-${p.id}-en" data-pf="en" value="${esc(p.en)}"></label>
-    <label for="p-${p.id}-card">選手證卡號<input type="text" id="p-${p.id}-card" data-pf="card" value="${esc(p.card)}"></label>
-    <label class="chk" for="p-${p.id}-coach"><input type="checkbox" id="p-${p.id}-coach" data-pf="coach" ${p.coach?'checked':''}>教練</label>
-    <button type="button" class="del" data-del="${p.id}">刪除</button>
-  </div>`;
-}
-function renderRoster(){
-  $('#roster-cols').innerHTML=SIDES.map(side=>{const t=state.teams[side];return `<section class="rteam" style="--tc:var(--${side})">
-    <h2>${side==='red'?'RED · 紅隊':'BLUE · 藍隊'}</h2>
-    <div class="tfields">
-      <label for="t-${side}-name">隊名（螢幕標題）<input id="t-${side}-name" data-tf="name" data-side="${side}" value="${esc(t.name)}"></label>
-      <label for="t-${side}-code">隊徽縮寫<input id="t-${side}-code" data-tf="code" data-side="${side}" value="${esc(t.code)}"></label>
-      <label for="t-${side}-branch">分會（隊旗）<input id="t-${side}-branch" data-tf="branch" data-side="${side}" value="${esc(t.branch)}"></label>
-      <label for="t-${side}-sub">分部（隊旗小字）<input id="t-${side}-sub" data-tf="sub" data-side="${side}" value="${esc(t.sub)}"></label>
-      <div class="logo-edit"><img src="${logoOf(side)}" alt="隊徽"><button class="opbtn" type="button" data-logo="${side}">上傳隊徽</button>${t.logo?`<button class="opbtn" type="button" data-logoclear="${side}">改回預設隊徽</button>`:''}</div>
-    </div>
-    <div class="plist">${state.roster[side].map(p=>rowHTML(side,p)).join('')}</div>
-    <button type="button" class="addp" data-addp="${side}">＋ 新增選手</button>
-  </section>`;}).join('');
-}
-let rosterT=null;
-function rosterChanged(){clearTimeout(rosterT);rosterT=setTimeout(()=>{save();broadcast();},300);}
-function imageToData(file,w,h,cb){
-  const fr=new FileReader();fr.onload=()=>{const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');const k=Math.max(w/img.width,h/img.height);const dw=img.width*k,dh=img.height*k;g.drawImage(img,(w-dw)/2,(h-dh)/2,dw,dh);cb(c.toDataURL('image/jpeg',.85));};img.src=fr.result;};fr.readAsDataURL(file);
-}
-let fileTarget=null;
-$('#file-in').addEventListener('change',e=>{
-  const f=e.target.files[0];e.target.value='';if(!f||!fileTarget)return;const tg=fileTarget;fileTarget=null;
-  if(tg.kind==='logo')imageToData(f,300,300,d=>{state.teams[tg.side].logo=d;commit();});
-  else imageToData(f,300,360,d=>{const p=player(tg.side,tg.id);if(p){p.photo=d;commit();}});
+$('#ref-red').innerHTML=refRemoteHTML('red');
+$('#ref-blue').innerHTML=refRemoteHTML('blue');
+function pressAnim(el){if(!el)return;el.classList.add('hit');setTimeout(()=>el.classList.remove('hit'),140);}
+$('#v-overview').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;ac();
+  if(b.dataset.hw==='reset'){if(!arm(b,'','',()=>act('reset')))toast('再按一次 RESET 確認重置');return;}
+  if(b.dataset.hw)act(b.dataset.hw,b.dataset.side);
 });
-$('#v-roster').addEventListener('input',e=>{
-  const t=e.target;
-  if(t.dataset.tf){state.teams[t.dataset.side][t.dataset.tf]=t.value;rosterChanged();return;}
-  if(t.dataset.pf){const row=t.closest('.prow'),p=player(row.dataset.side,row.dataset.pid);if(!p)return;p[t.dataset.pf]=t.type==='checkbox'?t.checked:t.value;rosterChanged();}
-});
-$('#v-roster').addEventListener('click',e=>{
-  const b=e.target.closest('button');if(!b)return;
-  if(b.dataset.addp){const side=b.dataset.addp;const p={id:side[0]+uid(),name:'新選手',en:'',card:'',coach:false,photo:null,seed:state.roster[side].length};state.roster[side].push(p);commit();setTimeout(()=>{const i=$(`#p-${p.id}-name`);if(i){i.focus();i.select();}},0);}
-  else if(b.dataset.del){const row=b.closest('.prow'),side=row.dataset.side,id=b.dataset.del;
-    if(b.dataset.armed!=='1'){b.dataset.armed='1';b.textContent='確定刪除';setTimeout(()=>{b.dataset.armed='';b.textContent='刪除';},2500);return;}
-    state.roster[side]=state.roster[side].filter(p=>p.id!==id);const line=state.match.lineup[side];Object.keys(line).forEach(k=>{if(line[k]===id)line[k]=null;});if(state.match.pendingTag[side]===id)state.match.pendingTag[side]=null;commit();}
-  else if(b.dataset.photo){const row=b.closest('.prow');fileTarget={kind:'photo',side:row.dataset.side,id:b.dataset.photo};$('#file-in').click();}
-  else if(b.dataset.logo){fileTarget={kind:'logo',side:b.dataset.logo};$('#file-in').click();}
-  else if(b.dataset.logoclear){state.teams[b.dataset.logoclear].logo=null;commit();}
-});
-$('#io-export').addEventListener('click',()=>{const ta=$('#io-text');ta.value=JSON.stringify({v:1,cfg:state.cfg,teams:state.teams,roster:state.roster});ta.select();
-  if(navigator.clipboard)navigator.clipboard.writeText(ta.value).then(()=>toast('已複製到剪貼簿'),()=>toast('已產生資料，請手動複製'));else toast('已產生資料，請手動複製');});
-$('#io-import').addEventListener('click',()=>{try{const d=JSON.parse($('#io-text').value);if(!d.teams||!d.roster)throw 0;state.cfg=Object.assign(state.cfg,d.cfg||{});state.teams=d.teams;state.roster=d.roster;state.match=newMatch(state);state.match.log=[{t:'賽前',side:null,text:'已匯入名冊資料'}];commit();toast('匯入完成');}catch(e){toast('資料格式不正確，請貼上完整的匯出內容');}});
-$('#io-demo').addEventListener('click',e=>{const b=e.currentTarget;if(b.dataset.armed!=='1'){b.dataset.armed='1';b.classList.add('armed');b.textContent='再按一次確認還原';setTimeout(()=>{b.dataset.armed='';b.classList.remove('armed');b.textContent='還原示範資料';},2500);return;}
-  b.dataset.armed='';b.classList.remove('armed');b.textContent='還原示範資料';state=demoState();undoStack.length=0;commit();toast('已還原示範資料');});
 
 /* ---------- computer control panel ---------- */
 function teamColHTML(side){
-  return `<section class="cp-card cp-team-card" style="--tc:var(--${side})"><h3>${SIDE_ZH[side]}副審 <span class="js-tname-${side}"></span></h3>
+  const k=side==='red'?['Q','A','D','W','S']:['U','J','L','I','K'];
+  return `<section class="cp-card cp-team-card" style="--tc:var(--${side})"><h3>${SIDE_ZH[side]}副審 <span data-tname="${side}"></span></h3>
     <div class="bigs">
-      <button class="big goal wide" type="button" data-cp="goal" data-side="${side}">得分 +1<small>GOAL · 鍵盤 ${side==='red'?'Q':'U'}</small></button>
-      <button class="big" type="button" data-cp="defFoul" data-side="${side}">防守犯規<small>PENALTY ▲ · ${side==='red'?'A':'J'}</small></button>
-      <button class="big" type="button" data-cp="atkFoul" data-side="${side}">進攻犯規<small>STRIKER FOUL，記在對手 · ${side==='red'?'D':'L'}</small></button>
-      <button class="big" type="button" data-cp="goalUndo" data-side="${side}">得分 −1<small>修正 · ${side==='red'?'W':'I'}</small></button>
-      <button class="big" type="button" data-cp="foulDown" data-side="${side}">犯規 −1<small>修正 · ${side==='red'?'S':'K'}</small></button>
-    </div></section>
-    <section class="cp-card"><h3>${SIDE_ZH[side]}陣容 <span>賽前選人，賽中可按棄權</span></h3><div class="lineup" data-lineup="${side}"></div></section>`;
-}
-function lineupHTML(side){
-  const m=state.match,setup=m.phase==='setup',live=m.phase==='running'||m.phase==='paused';
-  return POS.map(pos=>{
-    const pid=m.lineup[side][pos.k],p=pid&&player(side,pid),st=m.status[side][pos.k]||{};
-    let mid,btn='';
-    if(setup){mid=`<select id="lu-${side}-${pos.k}" data-assign="${side}" data-pos="${pos.k}" aria-label="${SIDE_ZH[side]} ${pos.label}"><option value="">— 未排 —</option>${state.roster[side].map(r=>`<option value="${r.id}"${r.id===pid?' selected':''}>${esc(r.name)}${r.coach?'（教練）':''}</option>`).join('')}</select>`;}
-    else{mid=`<span class="lu-name${st.forfeit?' out':''}">${p?esc(p.name):'—'}${st.changed?'　已交接':''}</span>`;
-      if(pos.k!=='coach')btn=`<button type="button" data-forfeit="${side}" data-pos="${pos.k}"${(!live||!p||st.forfeit)?' disabled':''}>棄權</button>`;}
-    return `<div class="lu" style="--pc:${pos.color}"><span class="lu-pos">${pos.label}</span>${mid}${btn}</div>`;
-  }).join('');
-}
-function renderControl(remote){
-  const m=state.match;
-  SIDES.forEach(s=>{
-    $(`#cp-score-${s}`).textContent=m.score[s];
-    $(`#cp-name-${s}`).textContent=state.teams[s].name;
-    $(`#cp-foul-${s}`).textContent=`犯規 ${m.fouls[s]}`;
-    $$(`.js-tname-${s}`).forEach(e=>e.textContent=state.teams[s].name);
-    const lu=$(`[data-lineup="${s}"]`);
-    if(!(remote&&lu.contains(document.activeElement)))lu.innerHTML=lineupHTML(s);
-    $(`#cp-main [data-cp="change"][data-side="${s}"]`).classList.toggle('alert',!!m.strikerPending[s]);
-  });
-  const ph=$('#cp-phase');ph.dataset.phase=m.phase;ph.textContent=PHASE_ZH[m.phase];
-  const pb=$('#cp-pause');pb.firstChild.textContent=m.phase==='paused'?'繼續計時':'暫停';pb.disabled=!(m.phase==='running'||m.phase==='paused');
-  $('#cp-undo').disabled=!undoStack.length;
+      <button class="big goal wide" type="button" data-cp="goal" data-side="${side}">得分 +1<small>GOAL · 鍵盤 ${k[0]}</small></button>
+      <button class="big" type="button" data-cp="defFoul" data-side="${side}">防守犯規<small>PENALTY ▲ · ${k[1]}</small></button>
+      <button class="big" type="button" data-cp="atkFoul" data-side="${side}">進攻犯規<small>STRIKER FOUL，記在對手 · ${k[2]}</small></button>
+      <button class="big" type="button" data-cp="goalUndo" data-side="${side}">得分 −1<small>修正 · ${k[3]}</small></button>
+      <button class="big" type="button" data-cp="foulDown" data-side="${side}">犯規 −1<small>修正 · ${k[4]}</small></button>
+    </div></section>`;
 }
 $('#cp-red').innerHTML=teamColHTML('red');
 $('#cp-blue').innerHTML=teamColHTML('blue');
 $('#v-control').addEventListener('click',e=>{
-  const b=e.target.closest('button');if(!b)return; ac();
-  if(b.dataset.forfeit){act('pos',b.dataset.forfeit,b.dataset.pos);return;}
-  const t=b.dataset.cp;if(!t)return;
+  const b=e.target.closest('button');if(!b)return;ac();const t=b.dataset.cp;if(!t)return;
   if(t==='undo'){undo();return;}
-  if(t==='pause'){act('pause');return;}
-  if(t==='change'){pressChange(b.dataset.side);return;}
-  if(t==='reset'){if(b.dataset.armed!=='1'){b.dataset.armed='1';b.classList.add('armed');b.firstChild.textContent='再按一次確認重置';setTimeout(()=>{b.dataset.armed='';b.classList.remove('armed');b.firstChild.textContent='重置比賽，準備下一場';},2500);return;}
-    b.dataset.armed='';b.classList.remove('armed');b.firstChild.textContent='重置比賽，準備下一場';act('reset');return;}
+  if(t==='reset'){arm(b,'重置比賽，準備下一場','再按一次確認重置',()=>act('reset'));return;}
   act(t,b.dataset.side);
 });
-$('#v-control').addEventListener('change',e=>{const t=e.target;if(t.dataset.assign)act('assign',t.dataset.assign,{pos:t.dataset.pos,pid:t.value});});
+
+/* ---------- operator bar ---------- */
+$$('[data-newtab]').forEach(a=>{try{a.href=location.href.split('#')[0]+'#'+a.dataset.newtab;}catch(e){a.href='#'+a.dataset.newtab;}});
+$$('[data-name]').forEach(inp=>inp.addEventListener('input',()=>{state.teams[inp.dataset.name].name=inp.value;save();broadcast();renderAll();}));
+$('#op-duration').addEventListener('change',e=>{if(state.match.phase!=='setup')return;state.cfg.duration=+e.target.value;state.match.remaining=state.cfg.duration*1000;commit();});
+$('#op-pause').addEventListener('click',()=>act('pause'));
+$$('.js-undo').forEach(b=>{if(!b.dataset.cp)b.addEventListener('click',undo);});
+$('#op-sound').addEventListener('change',e=>{state.cfg.sound=e.target.checked;commit();});
+$('#op-voice').addEventListener('change',e=>{state.cfg.voice=e.target.checked;commit();});
+$('#op-reset').addEventListener('click',e=>arm(e.currentTarget,'重置比賽','再按一次確認重置',()=>act('reset')));
+document.addEventListener('pointerdown',()=>ac(),{once:true});
+
+/* ---------- render ---------- */
+function renderAll(){
+  const m=state.match;
+  stages.forEach(renderStage);fillBanners();
+  $$('.js-phase').forEach(p=>{p.dataset.phase=m.phase;p.textContent=PHASE_ZH[m.phase];});
+  $$('.js-undo').forEach(b=>b.disabled=!undoStack.length);
+  if(route==='overview'){
+    SIDES.forEach(s=>{const i=$(`#name-${s}`);if(document.activeElement!==i)i.value=state.teams[s].name;});
+    const d=$('#op-duration');d.value=String(state.cfg.duration);d.disabled=m.phase!=='setup';
+    const pb=$('#op-pause');pb.textContent=m.phase==='paused'?'繼續':'暫停';pb.disabled=!(m.phase==='running'||m.phase==='paused');
+    $('#op-sound').checked=!!state.cfg.sound;$('#op-voice').checked=!!state.cfg.voice;
+  }
+  if(route==='control'){
+    SIDES.forEach(s=>{$(`#cp-score-${s}`).textContent=m.score[s];$(`#cp-name-${s}`).textContent=tname(s);$(`#cp-foul-${s}`).textContent=`犯規 ${m.fouls[s]}`;$$(`[data-tname="${s}"]`).forEach(e=>e.textContent=tname(s));});
+    const pb=$('#cp-pause');pb.firstChild.textContent=m.phase==='paused'?'繼續計時':'暫停';pb.disabled=!(m.phase==='running'||m.phase==='paused');
+  }
+  const L=m.log,html=L.length?L.map(e=>`<li data-side="${e.side||''}"><time>${esc(e.t)}</time><i></i><span>${esc(e.text)}</span></li>`).join(''):'<li class="empty">尚無紀錄</li>';
+  $$('.js-log').forEach(el=>el.innerHTML=html);
+}
+
+/* ---------- keyboard (also works with USB arcade-button encoders) ---------- */
+const KEYMAP={g:['start'],h:['end'],q:['goal','red'],w:['goalUndo','red'],a:['defFoul','red'],s:['foulDown','red'],d:['atkFoul','red'],u:['goal','blue'],i:['goalUndo','blue'],j:['defFoul','blue'],k:['foulDown','blue'],l:['atkFoul','blue']};
+document.addEventListener('keydown',e=>{
+  if(e.target.closest&&e.target.closest('input,textarea,select'))return;
+  if(e.ctrlKey||e.metaKey||e.altKey||e.repeat)return;
+  const k=e.key.toLowerCase();
+  if(k==='z'||k==='x'){comboPress(k);return;}
+  const m=KEYMAP[k];if(!m)return;ac();
+  pressAnim($(`[data-hw="${m[0]}"]${m[1]?`[data-side="${m[1]}"]`:''}`));
+  act(m[0],m[1]);
+});
 
 /* ---------- gamepads: PS4 / PS5 / Xbox (standard mapping) ---------- */
 const BN=['✕','○','□','△','L1','R1','L2','R2','Share','Options','L3','R3','↑','↓','←','→','PS','觸控板'];
-const GP_ROLES=[['all','單人全能'],['main','主審'],['refRed','紅隊副審'],['refBlue','藍隊副審'],['conRed','紅隊操作台'],['conBlue','藍隊操作台'],['off','不使用']];
+const GP_ROLES=[['all','單人全能'],['main','主審'],['refRed','紅隊副審'],['refBlue','藍隊副審'],['off','不使用']];
 const GP_ROLE_ZH=Object.fromEntries(GP_ROLES);
 const refMap=s=>({0:['goal',s],3:['defFoul',s],1:['atkFoul',s],2:['goalUndo',s],13:['foulDown',s]});
-const conMap=s=>({3:['pos',s,'striker'],1:['pos',s,'guide'],0:['pos',s,'libero'],2:['pos',s,'sweeper'],5:['pos',s,'keeper'],12:['cycle',s,-1],13:['cycle',s,1]});
 const GP_MAP={
-  all:{9:['start'],8:['end'],17:['pause'],4:['change','red'],5:['change','blue'],12:['goal','red'],14:['defFoul','red'],15:['atkFoul','red'],13:['goalUndo','red'],6:['foulDown','red'],3:['goal','blue'],2:['defFoul','blue'],1:['atkFoul','blue'],0:['goalUndo','blue'],7:['foulDown','blue']},
-  main:{0:['start'],1:['end'],9:['pause'],2:['undo'],4:['change','red'],5:['change','blue']},
-  refRed:refMap('red'),refBlue:refMap('blue'),conRed:conMap('red'),conBlue:conMap('blue'),off:{}};
-const ACT_ZH={start:'開始／繼續',end:'終場／關燈',pause:'暫停／繼續',undo:'復原',change:'前鋒交接',goal:'得分',goalUndo:'得分−1',defFoul:'防守犯規',atkFoul:'進攻犯規',foulDown:'犯規−1',cycle:'選選手'};
+  all:{9:['start'],8:['end'],17:['pause'],4:['combo','L1'],5:['combo','R1'],12:['goal','red'],14:['defFoul','red'],15:['atkFoul','red'],13:['goalUndo','red'],6:['foulDown','red'],3:['goal','blue'],2:['defFoul','blue'],1:['atkFoul','blue'],0:['goalUndo','blue'],7:['foulDown','blue']},
+  main:{0:['start'],1:['end'],9:['pause'],2:['undo'],4:['combo','L1'],5:['combo','R1']},
+  refRed:refMap('red'),refBlue:refMap('blue'),off:{}};
+const ACT_ZH={start:'開始／繼續',end:'終場／關燈',pause:'暫停／繼續',undo:'復原',combo:'重置（L1+R1 同按）',goal:'得分',goalUndo:'得分−1',defFoul:'防守犯規',atkFoul:'進攻犯規',foulDown:'犯規−1'};
 const ps=t=>`<span class="ps ${({'△':'tri','○':'cir','✕':'crs','□':'sq'})[t]||''}">${t}</span>`;
 const GP_HELP={
-  all:[[ps('Options'),'開始／繼續'],[ps('Share'),'終場；再按一次關球門燈'],[ps('觸控板'),'暫停'],[ps('L1')+ps('R1'),'紅／藍前鋒交接，兩顆同按＝重置'],
+  all:[[ps('Options'),'開始／繼續'],[ps('Share'),'終場；再按一次關球門燈'],[ps('觸控板'),'暫停'],[ps('L1')+ps('R1'),'兩顆同按＝重置'],
        [ps('↑')+ps('←')+ps('→')+ps('↓'),`紅隊：得分、防守犯規、進攻犯規、得分−1；${ps('L2')}犯規−1`],
-       [ps('△')+ps('□')+ps('○')+ps('✕'),`藍隊：得分、防守犯規、進攻犯規、得分−1；${ps('R2')}犯規−1`],['震動','前鋒棄權時持續震動，交接完成才停']],
-  main:[[ps('✕'),'開始／繼續'],[ps('○'),'終場；再按一次關球門燈'],[ps('Options'),'暫停'],[ps('□'),'復原上一步'],[ps('L1')+ps('R1'),'紅／藍前鋒交接，兩顆同按＝重置'],['震動','前鋒棄權時持續震動，交接完成才停']],
+       [ps('△')+ps('□')+ps('○')+ps('✕'),`藍隊：得分、防守犯規、進攻犯規、得分−1；${ps('R2')}犯規−1`],['震動','時間到自動終場時震動']],
+  main:[[ps('✕'),'開始／繼續'],[ps('○'),'終場；再按一次關球門燈'],[ps('Options'),'暫停'],[ps('□'),'復原上一步'],[ps('L1')+ps('R1'),'兩顆同按＝重置'],['震動','時間到自動終場時震動']],
   ref:[[ps('✕'),'得分'],[ps('△'),'防守犯規（PENALTY ▲）'],[ps('○'),'進攻犯規（記在對手）'],[ps('□'),'得分−1'],[ps('↓'),'犯規−1']],
-  con:[[ps('↑')+ps('↓'),'選選手，代替刷卡（賽前）'],[ps('△')+ps('○')+ps('✕')+ps('□')+ps('R1'),'Striker、Guide、Libero、Sweeper、Keeper；賽中按＝棄權']],
 };
 let gpRoles={};try{gpRoles=JSON.parse(localStorage.getItem('fida-gp-roles')||'{}')||{};}catch(e){gpRoles={};}
 function pads(){try{return [...(navigator.getGamepads?navigator.getGamepads():[])].filter(Boolean);}catch(e){return [];}}
 const gpKey=g=>g.index+'|'+g.id;
-function roleOf(g){const r=gpRoles[gpKey(g)];if(r)return r;const first=pads()[0];return first&&first.index===g.index?'all':'off';}
-function helpKey(r){return r.startsWith('ref')?'ref':r.startsWith('con')?'con':r;}
+function roleOf(g){const r=gpRoles[gpKey(g)];if(r&&GP_ROLE_ZH[r])return r;const f=pads()[0];return f&&f.index===g.index?'all':'off';}
+const helpKey=r=>r.startsWith('ref')?'ref':r;
 function renderGP(){
-  const list=pads();
-  const roles=[...new Set(list.map(roleOf))].filter(r=>r!=='off');
-  const show=roles.length?roles:['all'];
+  const list=pads(),roles=[...new Set(list.map(roleOf))].filter(r=>r!=='off'),keys=[...new Set((roles.length?roles:['all']).map(helpKey))];
   const top=list.length?`<div class="gp-list">${list.map(g=>`<div class="gp"><div><b>搖桿 ${g.index+1}</b><small>${esc(g.id)}</small></div>
       <select id="gprole-${g.index}" data-gprole="${esc(gpKey(g))}" aria-label="搖桿 ${g.index+1} 的角色">${GP_ROLES.map(([k,l])=>`<option value="${k}"${roleOf(g)===k?' selected':''}>${l}</option>`).join('')}</select>
       <div class="gp-last" data-gplast="${g.index}"></div></div>`).join('')}</div>
       <button class="opbtn" type="button" data-gptest style="margin-top:10px">測試震動</button>`
-    :`<p class="gp-empty">尚未偵測到搖桿。用 USB 線或藍牙連上 PS4 手把，在這個視窗按任一鍵就會出現。PS5、Xbox 手把也能用（✕ ○ □ △ 對應 A B X Y）。多支手把可分別指派主審、副審、操作台。</p>`;
-  const help=show.map(r=>{const k=helpKey(r);const seen=k==='ref'||k==='con'?show.filter(x=>helpKey(x)===k)[0]===r:true;if(!seen)return '';
-    const title=k==='ref'?'副審':k==='con'?'操作台':GP_ROLE_ZH[r];
-    return `<p class="gp-role">${list.length?'':'預設：'}${title}按鍵</p><table class="gp-map">${GP_HELP[k].map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</table>`;}).join('');
-  $$('.js-gp').forEach(el=>{if(el.contains(document.activeElement))return;el.innerHTML=top+help;});
+    :`<p class="gp-empty">尚未偵測到搖桿。用 USB 線或藍牙連上 PS4 手把，在這個視窗按任一鍵就會出現。PS5、Xbox 手把也能用（✕ ○ □ △ 對應 A B X Y）。多支手把可分別指派主審與兩位副審。</p>`;
+  const help=keys.map(k=>`<p class="gp-role">${list.length?'':'預設：'}${k==='ref'?'副審':GP_ROLE_ZH[k]}按鍵</p><table class="gp-map">${GP_HELP[k].map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</table>`).join('');
+  $$('.js-gp').forEach(el=>{if(!el.contains(document.activeElement))el.innerHTML=top+help;});
 }
 function rumble(g,ms){try{const a=g.vibrationActuator;if(a&&a.playEffect){a.playEffect('dual-rumble',{duration:ms,strongMagnitude:1,weakMagnitude:.7}).catch(()=>{});return true;}}catch(e){}return false;}
+function gpRumbleMain(ms){pads().forEach(g=>{const r=roleOf(g);if(r==='main'||r==='all')rumble(g,ms);});}
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||!t.dataset.gprole)return;gpRoles[t.dataset.gprole]=t.value;try{localStorage.setItem('fida-gp-roles',JSON.stringify(gpRoles));}catch(err){}renderGP();toast(`搖桿已設為「${GP_ROLE_ZH[t.value]}」`);});
-document.addEventListener('click',e=>{if(!e.target.closest('[data-gptest]'))return;const ok=pads().map(g=>rumble(g,500)).some(Boolean);if(!ok)toast('這個瀏覽器不支援手把震動（Chrome、Edge 可以）');});
+document.addEventListener('click',e=>{if(!e.target.closest('[data-gptest]'))return;if(!pads().map(g=>rumble(g,500)).some(Boolean))toast('這個瀏覽器不支援手把震動（Chrome、Edge 可以）');});
 window.addEventListener('gamepadconnected',e=>{renderGP();toast(`已連上搖桿 ${e.gamepad.index+1}`);});
 window.addEventListener('gamepaddisconnected',()=>renderGP());
+/* only one control window takes gamepad input, so a press never counts twice */
 const isCtrlRoute=()=>route==='overview'||route==='control';
-function heartbeat(){if(!bc)return;let f=false;try{f=document.hasFocus();}catch(e){}try{bc.postMessage({from:WIN_ID,hb:{ctrl:isCtrlRoute(),focus:f}});}catch(e){}}
-setInterval(heartbeat,800);
+setInterval(()=>{if(!bc)return;let f=false;try{f=document.hasFocus();}catch(e){}try{bc.postMessage({from:WIN_ID,hb:{ctrl:isCtrlRoute(),focus:f}});}catch(e){}},800);
 function gpLeader(){
   if(!isCtrlRoute()||document.visibilityState==='hidden')return false;
-  let f=false;try{f=document.hasFocus();}catch(e){}
-  if(f)return true;
+  let f=false;try{f=document.hasFocus();}catch(e){}if(f)return true;
   const now=Date.now(),others=Object.entries(peers).filter(([,p])=>now-p.t<2500&&p.ctrl);
   if(others.some(([,p])=>p.focus))return false;
   return others.every(([id])=>id>WIN_ID);
 }
-const gpPrev={};let gpCount=-1,lastRumble=0;
-function cyclePlayer(side,dir){
-  if(state.match.phase!=='setup'){toast('比賽已開始，無法再登錄選手');return;}
-  const list=state.roster[side].filter(p=>!p.coach);if(!list.length)return;
-  const cur=list.findIndex(p=>p.id===state.match.pendingTag[side]);
-  const idx=cur<0?(dir>0?0:list.length-1):(cur+dir+list.length)%list.length;
-  act('tag',side,list[idx].id);
-}
+const gpPrev={};let gpCount=-1;
 function gpPress(g,i){
   ac();
-  const role=roleOf(g),m=(GP_MAP[role]||{})[i],lasts=$$(`[data-gplast="${g.index}"]`);
+  const m=(GP_MAP[roleOf(g)]||{})[i],lasts=$$(`[data-gplast="${g.index}"]`);
   if(!m){lasts.forEach(e=>e.textContent=`${BN[i]||'鍵 '+i}：這個角色沒有指派`);return;}
-  const label=m[0]==='pos'?`${SIDE_ZH[m[1]]} ${POSMAP[m[2]].label}`:ACT_ZH[m[0]]+(m[1]?` · ${SIDE_ZH[m[1]]}`:'');
-  lasts.forEach(e=>e.textContent=`${BN[i]} → ${label}`);
+  lasts.forEach(e=>e.textContent=`${BN[i]} → ${ACT_ZH[m[0]]}${m[1]&&m[0]!=='combo'?' · '+SIDE_ZH[m[1]]:''}`);
   if(m[0]==='undo'){undo();return;}
-  if(m[0]==='cycle'){cyclePlayer(m[1],m[2]);return;}
-  if(m[0]==='pause'){act('pause');return;}
-  if(m[0]==='pos'){const el=$(`[data-arc="${m[1]}"][data-pos="${m[2]}"]`);if(el)pressAnim(el);act('pos',m[1],m[2]);return;}
-  const el=$(`[data-hw="${m[0]}"]${m[1]?`[data-side="${m[1]}"]`:''}`);if(el)pressAnim(el);
-  hw(m[0],m[1]);
+  if(m[0]==='combo'){comboPress(m[1]);return;}
+  pressAnim($(`[data-hw="${m[0]}"]${m[1]?`[data-side="${m[1]}"]`:''}`));
+  act(m[0],m[1]);
 }
 function pollGP(){
   const list=pads();
   if(list.length!==gpCount){gpCount=list.length;renderGP();}
   if(!list.length)return;
   const lead=gpLeader();
-  list.forEach(g=>{
-    const now=g.buttons.map(b=>b.pressed||b.value>.55),prev=gpPrev[g.index];
-    if(lead&&prev)now.forEach((p,i)=>{if(p&&!prev[i])gpPress(g,i);});
-    gpPrev[g.index]=now;
-  });
-  if(lead&&SIDES.some(s=>state.match.strikerPending[s])&&Date.now()-lastRumble>1400){
-    lastRumble=Date.now();list.forEach(g=>{const r=roleOf(g);if(r==='main'||r==='all')rumble(g,650);});
-  }
+  list.forEach(g=>{const now=g.buttons.map(b=>b.pressed||b.value>.55),prev=gpPrev[g.index];if(lead&&prev)now.forEach((p,i)=>{if(p&&!prev[i])gpPress(g,i);});gpPrev[g.index]=now;});
 }
-
-/* ---------- overview wiring ---------- */
-$('#zone-red').innerHTML=consoleHTML('red');
-$('#zone-blue').innerHTML=consoleHTML('blue');
-$$('[data-newtab]').forEach(a=>{try{a.href=location.href.split('#')[0]+'#'+a.dataset.newtab;}catch(e){a.href='#'+a.dataset.newtab;}});
-
-function pressAnim(el){el.classList.add('hit');setTimeout(()=>el.classList.remove('hit'),140);}
-function hw(type,side){
-  if(type==='change'){pressChange(side);return;}
-  act(type,side);
-}
-$('#v-overview').addEventListener('click',e=>{
-  const b=e.target.closest('button');if(!b)return;
-  if(b.dataset.hw){hw(b.dataset.hw,b.dataset.side);return;}
-  if(b.dataset.arc){act('pos',b.dataset.arc,b.dataset.pos);return;}
-  if(b.dataset.rfid){togglePicker(b.dataset.rfid);return;}
-  if(b.dataset.pick){const [side,id]=b.dataset.pick.split(':');closePickers();act('tag',side,id);return;}
-});
-function togglePicker(side){
-  const pk=$(`[data-picker="${side}"]`),btn=$(`[data-rfid="${side}"]`);
-  const open=pk.hidden; closePickers(); if(!open)return;
-  pk.innerHTML=`<h4>點選要感應的選手證（${esc(state.teams[side].name)}）</h4>`+state.roster[side].map(p=>`<button type="button" data-pick="${side}:${p.id}"><img src="${photoOf(side,p)}" alt=""><span><b>${esc(p.name)}</b>${p.coach?'　教練':''}<br><small>${esc(p.card||'未設定卡號')}</small></span></button>`).join('');
-  pk.hidden=false; btn.setAttribute('aria-expanded','true');
-}
-function closePickers(){$$('[data-picker]').forEach(p=>p.hidden=true);$$('[data-rfid]').forEach(b=>b.setAttribute('aria-expanded','false'));}
-document.addEventListener('click',e=>{if(!e.target.closest('[data-picker],[data-rfid]'))closePickers();});
-SIDES.forEach(side=>{$(`#cardid-${side}`).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();cardScan(e.target.value);e.target.value='';}});});
-
-$('#op-duration').addEventListener('change',e=>{if(state.match.phase!=='setup')return;state.cfg.duration=+e.target.value;state.match.remaining=state.cfg.duration*1000;commit();});
-$('#op-pause').addEventListener('click',()=>act('pause'));
-$('#op-undo').addEventListener('click',undo);
-$('#op-sound').addEventListener('change',e=>{state.cfg.sound=e.target.checked;commit();});
-$('#op-voice').addEventListener('change',e=>{state.cfg.voice=e.target.checked;commit();});
-$('#op-reset').addEventListener('click',e=>{const b=e.currentTarget;if(b.dataset.armed!=='1'){b.dataset.armed='1';b.classList.add('armed');b.textContent='再按一次確認重置';setTimeout(()=>{b.dataset.armed='';b.classList.remove('armed');b.textContent='重置比賽';},2500);return;}
-  b.dataset.armed='';b.classList.remove('armed');b.textContent='重置比賽';act('reset');});
-document.addEventListener('pointerdown',()=>ac(),{once:true});
-
-/* ---------- keyboard: arcade encoders + RFID keyboard-wedge ---------- */
-const KEYMAP={'1':['pos','red','striker'],'2':['pos','red','guide'],'3':['pos','red','libero'],'4':['pos','red','sweeper'],'5':['pos','red','keeper'],
- '6':['pos','blue','striker'],'7':['pos','blue','guide'],'8':['pos','blue','libero'],'9':['pos','blue','sweeper'],'0':['pos','blue','keeper'],
- 'g':['start'],'h':['end'],'z':['change','red'],'x':['change','blue'],
- 'q':['goal','red'],'w':['goalUndo','red'],'a':['defFoul','red'],'s':['foulDown','red'],'d':['atkFoul','red'],
- 'u':['goal','blue'],'i':['goalUndo','blue'],'j':['defFoul','blue'],'k':['foulDown','blue'],'l':['atkFoul','blue']};
-function runKey(k){
-  const m=KEYMAP[k];if(!m)return; ac();
-  if(m[0]==='pos'){const el=$(`[data-arc="${m[1]}"][data-pos="${m[2]}"]`);if(el)pressAnim(el);act('pos',m[1],m[2]);return;}
-  const el=$(`[data-hw="${m[0]}"]${m[1]?`[data-side="${m[1]}"]`:''}`);if(el)pressAnim(el);
-  hw(m[0],m[1]);
-}
-let kbuf='',klast=0,kpend=null,kpendT=null;
-document.addEventListener('keydown',e=>{
-  if(e.target.closest&&e.target.closest('input,textarea,select'))return;
-  if(e.ctrlKey||e.metaKey||e.altKey||e.repeat)return;
-  if(!isCtrlRoute()&&!route.endsWith('-screen'))return;
-  const t=performance.now(),k=e.key;
-  if(k==='Enter'){const code=kbuf+(kpend&&t-klast<60?kpend:'');if(code.length>=4){clearTimeout(kpendT);kpend=null;cardScan(code);e.preventDefault();}kbuf='';return;}
-  if(k.length!==1)return;
-  const lk=k.toLowerCase();
-  if(kpend&&t-klast<45&&((kpend==='z'&&lk==='x')||(kpend==='x'&&lk==='z'))){clearTimeout(kpendT);kpend=null;kbuf='';klast=t;act('reset');return;}
-  if(t-klast<45&&(kpend!==null||kbuf)){clearTimeout(kpendT);if(kpend!==null){kbuf+=kpend;kpend=null;}kbuf+=k;klast=t;return;}
-  kbuf='';klast=t;kpend=k;clearTimeout(kpendT);
-  kpendT=setTimeout(()=>{const kk=kpend;kpend=null;if(kk)runKey(kk.toLowerCase());},55);
-});
 
 /* ---------- routing ---------- */
-let route='overview';
-const fullWrap=$('#full-wrap');
+let route='overview',lastTxt='';
 function setRoute(){
-  const h=(location.hash||'').replace('#','')||'overview';
-  route=['overview','control','red-screen','score-screen','blue-screen','roster'].includes(h)?h:'overview';
+  const h=(location.hash||'').replace('#','');
+  route=['overview','control','score-screen'].includes(h)?h:'overview';
   $('#v-overview').hidden=route!=='overview';
   $('#v-control').hidden=route!=='control';
-  $('#v-roster').hidden=route!=='roster';
-  $('#v-full').hidden=!route.endsWith('-screen');
-  $('.topbar').hidden=route.endsWith('-screen');
+  $('#v-full').hidden=route!=='score-screen';
+  $('.topbar').hidden=route==='score-screen';
   $$('.tabs a').forEach(a=>{if(a.dataset.route===route)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
-  // remount stages for the active view only
-  stages.forEach(s=>ro.unobserve(s.wrap)); stages.length=0;
-  if(route==='overview') $$('#v-overview .stage-wrap').forEach(w=>{const r=mountStage(w,w.dataset.kind);ro.observe(w);});
-  if(route.endsWith('-screen')){const kind=route.split('-')[0];const r=mountStage(fullWrap,kind);ro.observe(fullWrap);}
-  renderAll();
-  renderGP();
+  stages.forEach(s=>ro.unobserve(s.wrap));stages.length=0;
+  if(route==='overview')mountStage($('#v-overview .stage-wrap'));
+  if(route==='score-screen')mountStage($('#full-wrap'));
+  renderAll();renderGP();
 }
 window.addEventListener('hashchange',setRoute);
 $('#full-fs').addEventListener('click',()=>{const el=$('#v-full');try{(document.fullscreenElement?document.exitFullscreen():el.requestFullscreen()).catch(()=>toast('這個視窗不支援全螢幕，可改用瀏覽器的全螢幕功能'));}catch(e){toast('這個視窗不支援全螢幕，可改用瀏覽器的全螢幕功能');}});
 
 /* ---------- frame loop ---------- */
-let lastTxt='';
 function tick(){
-  const m=state.match,now=Date.now();
-  const txt=fmtClock(remaining());
+  const m=state.match,now=Date.now(),txt=fmtClock(remaining());
   if(txt!==lastTxt){$$('.js-timer').forEach(e=>e.textContent=txt);lastTxt=txt;}
   if(m.phase==='running'){const raw=m.endAt-now;if((raw<=0&&(m.owner===WIN_ID||!m.owner))||raw<-1500)act('end',null,{auto:true});}
-  const f=m.flash,active=f&&now-f.at<2600;
-  $$('.banner').forEach(b=>{const s=b.dataset.side;const show=active&&(s==='score'||!f.team||f.team===s);if(b.classList.contains('show')!==!!show)b.classList.toggle('show',!!show);});
+  const f=m.flash,active=!!(f&&now-f.at<2600);
+  $$('.banner').forEach(b=>{if(b.classList.contains('show')!==active)b.classList.toggle('show',active);});
   SIDES.forEach(s=>{const hit=now-(m.ringFlash[s]||0)<3000;$$(`.ring[data-side="${s}"]`).forEach(r=>{r.classList.toggle('on',m.led==='white');r.classList.toggle('hit',hit);});});
   pollGP();
   requestAnimationFrame(tick);
