@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="無人機足球經賽營運系統（依 FIDA 2022 賽事系統復刻）：紅藍隊螢幕、LED 計分板、RFID 入列、操作台與裁判遙控器。">
+<meta name="description" content="無人機足球經賽營運系統（依 FIDA 2022 賽事系統復刻）：紅藍隊螢幕、LED 計分板、RFID 入列、操作台與裁判遙控器，支援電腦與 PS4 手把操作。">
 <title>無人機足球經賽營運系統</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -267,7 +267,65 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
 .card-badge{position:absolute;left:50%;top:14px;transform:translateX(-50%);z-index:3;padding:6px 16px;border-radius:6px;background:#3ccf7a;color:#06240f;font:900 22px var(--f-ui);letter-spacing:2px;white-space:nowrap}
 .card-out{position:absolute;right:16px;bottom:96px;z-index:3;padding:4px 12px;border-radius:4px;background:#fff;color:#222;font:900 22px var(--f-ui);letter-spacing:3px}
 
+/* ---------- computer control panel ---------- */
+.cp-status{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:12px;align-items:center;margin-bottom:16px;padding:14px 16px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.cp-team{display:flex;align-items:center;gap:14px;min-width:0}
+.cp-team.b{flex-direction:row-reverse;text-align:right}
+.cp-team div{min-width:0}
+.cp-team h2{margin:0;font-size:20px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cp-score{font:800 56px/1 var(--f-clock);font-variant-numeric:tabular-nums}
+.cp-team.r .cp-score{color:#ff6b64}
+.cp-team.b .cp-score{color:#6aa7ff}
+.cp-foul{font:700 12px var(--f-ui);color:var(--amber);white-space:nowrap}
+.cp-clock{display:flex;flex-direction:column;align-items:center;gap:6px}
+.cp-clock b{font:800 40px/1 var(--f-clock);font-variant-numeric:tabular-nums}
+@media (max-width:640px){.cp-status{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.cp-clock{grid-column:1/-1;order:-1}.cp-score{font-size:40px}.cp-clock b{font-size:30px}}
+.cp-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:1000px){.cp-grid{grid-template-columns:minmax(0,1fr)}}
+.cp-col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.cp-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;min-width:0}
+.cp-card h3{margin:0 0 10px;font-size:13px;font-weight:900;letter-spacing:.06em;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.cp-card h3 span{color:var(--fg)}
+.cp-team-card{border-top:4px solid var(--tc)}
+.bigs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.big{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel-2);font-weight:900;font-size:16px;text-align:left;min-height:64px;min-width:0}
+.big small{font:600 11px var(--f-ui);color:var(--muted)}
+.big:hover{border-color:#46506a}
+.big:active,.big.hit{transform:translateY(1px);filter:brightness(1.25)}
+.big.goal{min-height:84px;font-size:22px;background:color-mix(in srgb,var(--tc) 26%,var(--panel-2));border-color:color-mix(in srgb,var(--tc) 60%,var(--line))}
+.big.wide{grid-column:1/-1}
+.big.go{background:rgba(60,207,122,.15);border-color:rgba(60,207,122,.5)}
+.big.stop{background:rgba(232,64,58,.13);border-color:rgba(232,64,58,.45)}
+.big.alert{background:#7d1518;border-color:#ff3b30;animation:pulse 1s ease-in-out infinite}
+.big.armed{background:#7d1518;border-color:#ff3b30}
+@keyframes pulse{50%{box-shadow:0 0 0 5px rgba(255,59,48,.35)}}
+.big:disabled{opacity:.4;cursor:not-allowed}
+.lineup{display:flex;flex-direction:column;gap:6px}
+.lu{display:grid;grid-template-columns:84px minmax(0,1fr) auto;gap:8px;align-items:center;min-height:34px}
+.lu-pos{padding:5px 6px;border-radius:5px;background:var(--pc);color:#fff;font:400 12px var(--f-plate);text-align:center;text-shadow:0 1px 0 rgba(0,0,0,.3)}
+.lu select{min-width:0;width:100%;padding:7px 8px;border-radius:6px;border:1px solid var(--line);background:#0f1218;color:var(--fg);font:600 13px var(--f-ui)}
+.lu-name{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lu-name.out{color:var(--muted);text-decoration:line-through}
+.lu button{padding:6px 10px;border-radius:6px;border:1px solid #4a2626;background:none;color:#ffb4ae;font-size:12px;font-weight:700;white-space:nowrap}
+.lu button:disabled{opacity:.3;cursor:not-allowed}
+/* gamepads */
+.gp-list{display:flex;flex-direction:column;gap:10px}
+.gp{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;padding:10px;border-radius:8px;background:#11151d;border:1px solid #1f2430}
+.gp b{font-size:13px}
+.gp small{display:block;color:var(--muted);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gp div{min-width:0}
+.gp select{padding:6px 8px;border-radius:6px;border:1px solid var(--line);background:#0f1218;color:var(--fg);font:600 13px var(--f-ui);max-width:100%}
+.gp-last{grid-column:1/-1;font:700 12px var(--f-ui);color:var(--amber);min-height:18px}
+.gp-empty{color:var(--muted);font-size:13px;margin:0}
+.gp-role{margin:14px 0 4px;font-size:12px;font-weight:900;color:var(--fg);letter-spacing:.04em}
+.gp-map{width:100%;border-collapse:collapse;font-size:12px}
+.gp-map td{padding:4px 6px;border-bottom:1px solid #1f2430;vertical-align:middle}
+.gp-map td:first-child{white-space:nowrap;width:1%}
+.ps{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 5px;margin-right:2px;border-radius:11px;background:#202634;border:1px solid #3a4253;font:700 11px var(--f-ui);color:#fff}
+.ps.tri{color:#3ddc97}.ps.cir{color:#ff6b6b}.ps.crs{color:#7aa7ff}.ps.sq{color:#ff8ad8}
+
 @media (prefers-reduced-motion:reduce){
+  .big.alert{animation:none}
   .remote-main.vib{animation:none;outline:3px solid #ff3b30}
   .banner.show .banner-box{animation:none}
   .toast,.ring{transition:none}
@@ -286,6 +344,7 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
   </div>
   <nav class="tabs" aria-label="畫面">
     <a href="#overview" data-route="overview">總覽控制室</a>
+    <a href="#control" data-route="control">電腦操作</a>
     <a href="#red-screen" data-route="red-screen">紅隊螢幕</a>
     <a href="#score-screen" data-route="score-screen">計分螢幕</a>
     <a href="#blue-screen" data-route="blue-screen">藍隊螢幕</a>
@@ -353,7 +412,7 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
   <div class="lower">
     <section class="box">
       <h3>賽事紀錄</h3>
-      <ol class="log" id="log"></ol>
+      <ol class="log js-log" id="log"></ol>
     </section>
     <section class="box">
       <h3>操作流程與硬體對接</h3>
@@ -378,10 +437,40 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
             <tr><td>藍隊副審</td><td><kbd>U</kbd> 得分　<kbd>I</kbd> 得分−1　<kbd>J</kbd> 防守犯規　<kbd>K</kbd> 犯規−1　<kbd>L</kbd> 進攻犯規</td></tr>
             <tr><td>RFID 讀卡機</td><td>USB 鍵盤模式（輸入卡號＋Enter）直接接上即可，系統依卡號判斷是哪一隊的選手。</td></tr>
           </table>
+          <p class="note">不想做實體硬體：用「電腦操作」頁，一台筆電滑鼠點選就能完成整場；或接 PS4 手把，主審手把在前鋒棄權時會震動。</p>
           <p class="note">街機按鈕接 USB 編碼器（Zero Delay 這類）並設成上面的按鍵，就能做出跟影片一樣的實體操作台；遙控器可用無線鍵盤模組。</p>
         </div>
       </div>
     </section>
+  </div>
+  <section class="box" style="margin-top:18px"><h3>遊戲搖桿 PS4 · PS5 · Xbox</h3><div class="js-gp"></div></section>
+</section>
+
+<!-- ================= COMPUTER CONTROL ================= -->
+<section id="v-control" class="wrap" hidden>
+  <div class="cp-status">
+    <div class="cp-team r"><span class="cp-score" id="cp-score-red">0</span><div><h2 id="cp-name-red"></h2><span class="cp-foul" id="cp-foul-red"></span></div></div>
+    <div class="cp-clock"><b class="js-timer">03:00:00</b><span class="pill" id="cp-phase" data-phase="setup">賽前準備</span></div>
+    <div class="cp-team b"><span class="cp-score" id="cp-score-blue">0</span><div><h2 id="cp-name-blue"></h2><span class="cp-foul" id="cp-foul-blue"></span></div></div>
+  </div>
+  <div class="cp-grid">
+    <div class="cp-col" id="cp-red"></div>
+    <div class="cp-col">
+      <section class="cp-card"><h3>主審</h3>
+        <div class="bigs" id="cp-main">
+          <button class="big go" type="button" data-cp="start">▶ 開始／繼續<small>START · 鍵盤 G</small></button>
+          <button class="big stop" type="button" data-cp="end">❚❚ 終場／關燈<small>END · 鍵盤 H</small></button>
+          <button class="big" type="button" data-cp="change" data-side="red">紅隊前鋒交接<small>RED STRIKER CHANGE · Z</small></button>
+          <button class="big" type="button" data-cp="change" data-side="blue">藍隊前鋒交接<small>BLUE STRIKER CHANGE · X</small></button>
+          <button class="big" type="button" data-cp="pause" id="cp-pause">暫停<small>暫停計時</small></button>
+          <button class="big" type="button" data-cp="undo" id="cp-undo">復原上一步<small>按錯時使用</small></button>
+          <button class="big wide" type="button" data-cp="reset" id="cp-reset">重置比賽，準備下一場<small>按兩下確認 · Z+X 同按</small></button>
+        </div>
+      </section>
+      <section class="cp-card"><h3>遊戲搖桿 <span>PS4 · PS5 · Xbox</span></h3><div class="js-gp"></div></section>
+      <section class="cp-card"><h3>賽事紀錄</h3><ol class="log js-log"></ol></section>
+    </div>
+    <div class="cp-col" id="cp-blue"></div>
   </div>
 </section>
 
@@ -506,7 +595,8 @@ let saveT=null;
 function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(STORE,JSON.stringify(state));}catch(e){}},250);}
 let bc=null; try{bc=new BroadcastChannel('fida-ds-replica');}catch(e){}
 function broadcast(){ if(bc){try{bc.postMessage({from:WIN_ID,state});}catch(e){}} }
-if(bc) bc.onmessage=ev=>{ if(!ev.data||ev.data.from===WIN_ID) return; state=ev.data.state; save(); renderAll(true); };
+const peers={};
+if(bc) bc.onmessage=ev=>{ const d=ev.data; if(!d||d.from===WIN_ID) return; if(d.hb){peers[d.from]=Object.assign({t:Date.now()},d.hb);return;} state=d.state; save(); renderAll(true); };
 function commit(){ save(); broadcast(); renderAll(); }
 
 /* ---------- helpers ---------- */
@@ -581,6 +671,13 @@ function act(type,side,arg){
         ok=true;
       }else{toast('比賽已結束，請重置後再登錄');return;}
       break;}
+    case 'assign':{
+      if(m.phase!=='setup'){toast('比賽已開始，無法再更換陣容');return;}
+      const line=m.lineup[side],pos=arg.pos,pid=arg.pid||null;
+      if(pid)Object.keys(line).forEach(k=>{if(line[k]===pid)line[k]=null;});
+      line[pos]=pid;delete m.status[side][pos];if(m.pendingTag[side]===pid)m.pendingTag[side]=null;
+      const pp=pid&&player(side,pid);
+      log(side,pp?`${tn} ${pp.name} → ${POSMAP[pos].label}`:`${tn} ${POSMAP[pos].label} 清空`);sfx('assign');ok=true;break;}
     case 'start':{
       if(m.phase==='setup'){m.phase='running';m.endAt=Date.now()+m.remaining;m.owner=WIN_ID;m.led='white';m.pendingTag={red:null,blue:null};flash('start',null,'START','比賽開始');log(null,'比賽開始，球門 LED 亮起');sfx('start');ok=true;}
       else if(m.phase==='paused'){m.phase='running';m.endAt=Date.now()+m.remaining;m.owner=WIN_ID;log(null,'比賽繼續');sfx('resume');ok=true;}
@@ -804,7 +901,8 @@ function renderConsoles(){
 }
 function renderLog(){
   const L=state.match.log;
-  $('#log').innerHTML=L.length?L.map(e=>`<li data-side="${e.side||''}"><time>${esc(e.t)}</time><i></i><span>${esc(e.text)}</span></li>`).join(''):'<li class="empty">尚無紀錄</li>';
+  const html=L.length?L.map(e=>`<li data-side="${e.side||''}"><time>${esc(e.t)}</time><i></i><span>${esc(e.text)}</span></li>`).join(''):'<li class="empty">尚無紀錄</li>';
+  $$('.js-log').forEach(el=>el.innerHTML=html);
 }
 const PHASE_ZH={setup:'賽前準備',running:'比賽進行中',paused:'暫停中',ended:'比賽結束',off:'比賽結束 · 燈號已關'};
 function renderOpbar(){
@@ -819,6 +917,7 @@ function renderAll(remote){
   stages.forEach(r=>{if(r.kind==='score')renderScoreStage(r);else renderTeamStage(r);});
   fillBanners();
   if(route==='overview'){renderConsoles();renderLog();renderOpbar();}
+  if(route==='control'){renderControl(remote);renderLog();}
   if(route==='roster'&&!(remote&&document.activeElement&&document.activeElement.closest('#v-roster')))renderRoster();
 }
 
@@ -879,6 +978,150 @@ $('#io-import').addEventListener('click',()=>{try{const d=JSON.parse($('#io-text
 $('#io-demo').addEventListener('click',e=>{const b=e.currentTarget;if(b.dataset.armed!=='1'){b.dataset.armed='1';b.classList.add('armed');b.textContent='再按一次確認還原';setTimeout(()=>{b.dataset.armed='';b.classList.remove('armed');b.textContent='還原示範資料';},2500);return;}
   b.dataset.armed='';b.classList.remove('armed');b.textContent='還原示範資料';state=demoState();undoStack.length=0;commit();toast('已還原示範資料');});
 
+/* ---------- computer control panel ---------- */
+function teamColHTML(side){
+  return `<section class="cp-card cp-team-card" style="--tc:var(--${side})"><h3>${SIDE_ZH[side]}副審 <span class="js-tname-${side}"></span></h3>
+    <div class="bigs">
+      <button class="big goal wide" type="button" data-cp="goal" data-side="${side}">得分 +1<small>GOAL · 鍵盤 ${side==='red'?'Q':'U'}</small></button>
+      <button class="big" type="button" data-cp="defFoul" data-side="${side}">防守犯規<small>PENALTY ▲ · ${side==='red'?'A':'J'}</small></button>
+      <button class="big" type="button" data-cp="atkFoul" data-side="${side}">進攻犯規<small>STRIKER FOUL，記在對手 · ${side==='red'?'D':'L'}</small></button>
+      <button class="big" type="button" data-cp="goalUndo" data-side="${side}">得分 −1<small>修正 · ${side==='red'?'W':'I'}</small></button>
+      <button class="big" type="button" data-cp="foulDown" data-side="${side}">犯規 −1<small>修正 · ${side==='red'?'S':'K'}</small></button>
+    </div></section>
+    <section class="cp-card"><h3>${SIDE_ZH[side]}陣容 <span>賽前選人，賽中可按棄權</span></h3><div class="lineup" data-lineup="${side}"></div></section>`;
+}
+function lineupHTML(side){
+  const m=state.match,setup=m.phase==='setup',live=m.phase==='running'||m.phase==='paused';
+  return POS.map(pos=>{
+    const pid=m.lineup[side][pos.k],p=pid&&player(side,pid),st=m.status[side][pos.k]||{};
+    let mid,btn='';
+    if(setup){mid=`<select id="lu-${side}-${pos.k}" data-assign="${side}" data-pos="${pos.k}" aria-label="${SIDE_ZH[side]} ${pos.label}"><option value="">— 未排 —</option>${state.roster[side].map(r=>`<option value="${r.id}"${r.id===pid?' selected':''}>${esc(r.name)}${r.coach?'（教練）':''}</option>`).join('')}</select>`;}
+    else{mid=`<span class="lu-name${st.forfeit?' out':''}">${p?esc(p.name):'—'}${st.changed?'　已交接':''}</span>`;
+      if(pos.k!=='coach')btn=`<button type="button" data-forfeit="${side}" data-pos="${pos.k}"${(!live||!p||st.forfeit)?' disabled':''}>棄權</button>`;}
+    return `<div class="lu" style="--pc:${pos.color}"><span class="lu-pos">${pos.label}</span>${mid}${btn}</div>`;
+  }).join('');
+}
+function renderControl(remote){
+  const m=state.match;
+  SIDES.forEach(s=>{
+    $(`#cp-score-${s}`).textContent=m.score[s];
+    $(`#cp-name-${s}`).textContent=state.teams[s].name;
+    $(`#cp-foul-${s}`).textContent=`犯規 ${m.fouls[s]}`;
+    $$(`.js-tname-${s}`).forEach(e=>e.textContent=state.teams[s].name);
+    const lu=$(`[data-lineup="${s}"]`);
+    if(!(remote&&lu.contains(document.activeElement)))lu.innerHTML=lineupHTML(s);
+    $(`#cp-main [data-cp="change"][data-side="${s}"]`).classList.toggle('alert',!!m.strikerPending[s]);
+  });
+  const ph=$('#cp-phase');ph.dataset.phase=m.phase;ph.textContent=PHASE_ZH[m.phase];
+  const pb=$('#cp-pause');pb.firstChild.textContent=m.phase==='paused'?'繼續計時':'暫停';pb.disabled=!(m.phase==='running'||m.phase==='paused');
+  $('#cp-undo').disabled=!undoStack.length;
+}
+$('#cp-red').innerHTML=teamColHTML('red');
+$('#cp-blue').innerHTML=teamColHTML('blue');
+$('#v-control').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return; ac();
+  if(b.dataset.forfeit){act('pos',b.dataset.forfeit,b.dataset.pos);return;}
+  const t=b.dataset.cp;if(!t)return;
+  if(t==='undo'){undo();return;}
+  if(t==='pause'){act('pause');return;}
+  if(t==='change'){pressChange(b.dataset.side);return;}
+  if(t==='reset'){if(b.dataset.armed!=='1'){b.dataset.armed='1';b.classList.add('armed');b.firstChild.textContent='再按一次確認重置';setTimeout(()=>{b.dataset.armed='';b.classList.remove('armed');b.firstChild.textContent='重置比賽，準備下一場';},2500);return;}
+    b.dataset.armed='';b.classList.remove('armed');b.firstChild.textContent='重置比賽，準備下一場';act('reset');return;}
+  act(t,b.dataset.side);
+});
+$('#v-control').addEventListener('change',e=>{const t=e.target;if(t.dataset.assign)act('assign',t.dataset.assign,{pos:t.dataset.pos,pid:t.value});});
+
+/* ---------- gamepads: PS4 / PS5 / Xbox (standard mapping) ---------- */
+const BN=['✕','○','□','△','L1','R1','L2','R2','Share','Options','L3','R3','↑','↓','←','→','PS','觸控板'];
+const GP_ROLES=[['all','單人全能'],['main','主審'],['refRed','紅隊副審'],['refBlue','藍隊副審'],['conRed','紅隊操作台'],['conBlue','藍隊操作台'],['off','不使用']];
+const GP_ROLE_ZH=Object.fromEntries(GP_ROLES);
+const refMap=s=>({0:['goal',s],3:['defFoul',s],1:['atkFoul',s],2:['goalUndo',s],13:['foulDown',s]});
+const conMap=s=>({3:['pos',s,'striker'],1:['pos',s,'guide'],0:['pos',s,'libero'],2:['pos',s,'sweeper'],5:['pos',s,'keeper'],12:['cycle',s,-1],13:['cycle',s,1]});
+const GP_MAP={
+  all:{9:['start'],8:['end'],17:['pause'],4:['change','red'],5:['change','blue'],12:['goal','red'],14:['defFoul','red'],15:['atkFoul','red'],13:['goalUndo','red'],6:['foulDown','red'],3:['goal','blue'],2:['defFoul','blue'],1:['atkFoul','blue'],0:['goalUndo','blue'],7:['foulDown','blue']},
+  main:{0:['start'],1:['end'],9:['pause'],2:['undo'],4:['change','red'],5:['change','blue']},
+  refRed:refMap('red'),refBlue:refMap('blue'),conRed:conMap('red'),conBlue:conMap('blue'),off:{}};
+const ACT_ZH={start:'開始／繼續',end:'終場／關燈',pause:'暫停／繼續',undo:'復原',change:'前鋒交接',goal:'得分',goalUndo:'得分−1',defFoul:'防守犯規',atkFoul:'進攻犯規',foulDown:'犯規−1',cycle:'選選手'};
+const ps=t=>`<span class="ps ${({'△':'tri','○':'cir','✕':'crs','□':'sq'})[t]||''}">${t}</span>`;
+const GP_HELP={
+  all:[[ps('Options'),'開始／繼續'],[ps('Share'),'終場；再按一次關球門燈'],[ps('觸控板'),'暫停'],[ps('L1')+ps('R1'),'紅／藍前鋒交接，兩顆同按＝重置'],
+       [ps('↑')+ps('←')+ps('→')+ps('↓'),`紅隊：得分、防守犯規、進攻犯規、得分−1；${ps('L2')}犯規−1`],
+       [ps('△')+ps('□')+ps('○')+ps('✕'),`藍隊：得分、防守犯規、進攻犯規、得分−1；${ps('R2')}犯規−1`],['震動','前鋒棄權時持續震動，交接完成才停']],
+  main:[[ps('✕'),'開始／繼續'],[ps('○'),'終場；再按一次關球門燈'],[ps('Options'),'暫停'],[ps('□'),'復原上一步'],[ps('L1')+ps('R1'),'紅／藍前鋒交接，兩顆同按＝重置'],['震動','前鋒棄權時持續震動，交接完成才停']],
+  ref:[[ps('✕'),'得分'],[ps('△'),'防守犯規（PENALTY ▲）'],[ps('○'),'進攻犯規（記在對手）'],[ps('□'),'得分−1'],[ps('↓'),'犯規−1']],
+  con:[[ps('↑')+ps('↓'),'選選手，代替刷卡（賽前）'],[ps('△')+ps('○')+ps('✕')+ps('□')+ps('R1'),'Striker、Guide、Libero、Sweeper、Keeper；賽中按＝棄權']],
+};
+let gpRoles={};try{gpRoles=JSON.parse(localStorage.getItem('fida-gp-roles')||'{}')||{};}catch(e){gpRoles={};}
+function pads(){try{return [...(navigator.getGamepads?navigator.getGamepads():[])].filter(Boolean);}catch(e){return [];}}
+const gpKey=g=>g.index+'|'+g.id;
+function roleOf(g){const r=gpRoles[gpKey(g)];if(r)return r;const first=pads()[0];return first&&first.index===g.index?'all':'off';}
+function helpKey(r){return r.startsWith('ref')?'ref':r.startsWith('con')?'con':r;}
+function renderGP(){
+  const list=pads();
+  const roles=[...new Set(list.map(roleOf))].filter(r=>r!=='off');
+  const show=roles.length?roles:['all'];
+  const top=list.length?`<div class="gp-list">${list.map(g=>`<div class="gp"><div><b>搖桿 ${g.index+1}</b><small>${esc(g.id)}</small></div>
+      <select id="gprole-${g.index}" data-gprole="${esc(gpKey(g))}" aria-label="搖桿 ${g.index+1} 的角色">${GP_ROLES.map(([k,l])=>`<option value="${k}"${roleOf(g)===k?' selected':''}>${l}</option>`).join('')}</select>
+      <div class="gp-last" data-gplast="${g.index}"></div></div>`).join('')}</div>
+      <button class="opbtn" type="button" data-gptest style="margin-top:10px">測試震動</button>`
+    :`<p class="gp-empty">尚未偵測到搖桿。用 USB 線或藍牙連上 PS4 手把，在這個視窗按任一鍵就會出現。PS5、Xbox 手把也能用（✕ ○ □ △ 對應 A B X Y）。多支手把可分別指派主審、副審、操作台。</p>`;
+  const help=show.map(r=>{const k=helpKey(r);const seen=k==='ref'||k==='con'?show.filter(x=>helpKey(x)===k)[0]===r:true;if(!seen)return '';
+    const title=k==='ref'?'副審':k==='con'?'操作台':GP_ROLE_ZH[r];
+    return `<p class="gp-role">${list.length?'':'預設：'}${title}按鍵</p><table class="gp-map">${GP_HELP[k].map(([a,b])=>`<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</table>`;}).join('');
+  $$('.js-gp').forEach(el=>{if(el.contains(document.activeElement))return;el.innerHTML=top+help;});
+}
+function rumble(g,ms){try{const a=g.vibrationActuator;if(a&&a.playEffect){a.playEffect('dual-rumble',{duration:ms,strongMagnitude:1,weakMagnitude:.7}).catch(()=>{});return true;}}catch(e){}return false;}
+document.addEventListener('change',e=>{const t=e.target;if(!t.dataset||!t.dataset.gprole)return;gpRoles[t.dataset.gprole]=t.value;try{localStorage.setItem('fida-gp-roles',JSON.stringify(gpRoles));}catch(err){}renderGP();toast(`搖桿已設為「${GP_ROLE_ZH[t.value]}」`);});
+document.addEventListener('click',e=>{if(!e.target.closest('[data-gptest]'))return;const ok=pads().map(g=>rumble(g,500)).some(Boolean);if(!ok)toast('這個瀏覽器不支援手把震動（Chrome、Edge 可以）');});
+window.addEventListener('gamepadconnected',e=>{renderGP();toast(`已連上搖桿 ${e.gamepad.index+1}`);});
+window.addEventListener('gamepaddisconnected',()=>renderGP());
+const isCtrlRoute=()=>route==='overview'||route==='control';
+function heartbeat(){if(!bc)return;let f=false;try{f=document.hasFocus();}catch(e){}try{bc.postMessage({from:WIN_ID,hb:{ctrl:isCtrlRoute(),focus:f}});}catch(e){}}
+setInterval(heartbeat,800);
+function gpLeader(){
+  if(!isCtrlRoute()||document.visibilityState==='hidden')return false;
+  let f=false;try{f=document.hasFocus();}catch(e){}
+  if(f)return true;
+  const now=Date.now(),others=Object.entries(peers).filter(([,p])=>now-p.t<2500&&p.ctrl);
+  if(others.some(([,p])=>p.focus))return false;
+  return others.every(([id])=>id>WIN_ID);
+}
+const gpPrev={};let gpCount=-1,lastRumble=0;
+function cyclePlayer(side,dir){
+  if(state.match.phase!=='setup'){toast('比賽已開始，無法再登錄選手');return;}
+  const list=state.roster[side].filter(p=>!p.coach);if(!list.length)return;
+  const cur=list.findIndex(p=>p.id===state.match.pendingTag[side]);
+  const idx=cur<0?(dir>0?0:list.length-1):(cur+dir+list.length)%list.length;
+  act('tag',side,list[idx].id);
+}
+function gpPress(g,i){
+  ac();
+  const role=roleOf(g),m=(GP_MAP[role]||{})[i],lasts=$$(`[data-gplast="${g.index}"]`);
+  if(!m){lasts.forEach(e=>e.textContent=`${BN[i]||'鍵 '+i}：這個角色沒有指派`);return;}
+  const label=m[0]==='pos'?`${SIDE_ZH[m[1]]} ${POSMAP[m[2]].label}`:ACT_ZH[m[0]]+(m[1]?` · ${SIDE_ZH[m[1]]}`:'');
+  lasts.forEach(e=>e.textContent=`${BN[i]} → ${label}`);
+  if(m[0]==='undo'){undo();return;}
+  if(m[0]==='cycle'){cyclePlayer(m[1],m[2]);return;}
+  if(m[0]==='pause'){act('pause');return;}
+  if(m[0]==='pos'){const el=$(`[data-arc="${m[1]}"][data-pos="${m[2]}"]`);if(el)pressAnim(el);act('pos',m[1],m[2]);return;}
+  const el=$(`[data-hw="${m[0]}"]${m[1]?`[data-side="${m[1]}"]`:''}`);if(el)pressAnim(el);
+  hw(m[0],m[1]);
+}
+function pollGP(){
+  const list=pads();
+  if(list.length!==gpCount){gpCount=list.length;renderGP();}
+  if(!list.length)return;
+  const lead=gpLeader();
+  list.forEach(g=>{
+    const now=g.buttons.map(b=>b.pressed||b.value>.55),prev=gpPrev[g.index];
+    if(lead&&prev)now.forEach((p,i)=>{if(p&&!prev[i])gpPress(g,i);});
+    gpPrev[g.index]=now;
+  });
+  if(lead&&SIDES.some(s=>state.match.strikerPending[s])&&Date.now()-lastRumble>1400){
+    lastRumble=Date.now();list.forEach(g=>{const r=roleOf(g);if(r==='main'||r==='all')rumble(g,650);});
+  }
+}
+
 /* ---------- overview wiring ---------- */
 $('#zone-red').innerHTML=consoleHTML('red');
 $('#zone-blue').innerHTML=consoleHTML('blue');
@@ -931,7 +1174,7 @@ let kbuf='',klast=0,kpend=null,kpendT=null;
 document.addEventListener('keydown',e=>{
   if(e.target.closest&&e.target.closest('input,textarea,select'))return;
   if(e.ctrlKey||e.metaKey||e.altKey||e.repeat)return;
-  if(route!=='overview'&&!route.endsWith('-screen'))return;
+  if(!isCtrlRoute()&&!route.endsWith('-screen'))return;
   const t=performance.now(),k=e.key;
   if(k==='Enter'){const code=kbuf+(kpend&&t-klast<60?kpend:'');if(code.length>=4){clearTimeout(kpendT);kpend=null;cardScan(code);e.preventDefault();}kbuf='';return;}
   if(k.length!==1)return;
@@ -947,8 +1190,9 @@ let route='overview';
 const fullWrap=$('#full-wrap');
 function setRoute(){
   const h=(location.hash||'').replace('#','')||'overview';
-  route=['overview','red-screen','score-screen','blue-screen','roster'].includes(h)?h:'overview';
+  route=['overview','control','red-screen','score-screen','blue-screen','roster'].includes(h)?h:'overview';
   $('#v-overview').hidden=route!=='overview';
+  $('#v-control').hidden=route!=='control';
   $('#v-roster').hidden=route!=='roster';
   $('#v-full').hidden=!route.endsWith('-screen');
   $('.topbar').hidden=route.endsWith('-screen');
@@ -958,6 +1202,7 @@ function setRoute(){
   if(route==='overview') $$('#v-overview .stage-wrap').forEach(w=>{const r=mountStage(w,w.dataset.kind);ro.observe(w);});
   if(route.endsWith('-screen')){const kind=route.split('-')[0];const r=mountStage(fullWrap,kind);ro.observe(fullWrap);}
   renderAll();
+  renderGP();
 }
 window.addEventListener('hashchange',setRoute);
 $('#full-fs').addEventListener('click',()=>{const el=$('#v-full');try{(document.fullscreenElement?document.exitFullscreen():el.requestFullscreen()).catch(()=>toast('這個視窗不支援全螢幕，可改用瀏覽器的全螢幕功能'));}catch(e){toast('這個視窗不支援全螢幕，可改用瀏覽器的全螢幕功能');}});
@@ -972,6 +1217,7 @@ function tick(){
   const f=m.flash,active=f&&now-f.at<2600;
   $$('.banner').forEach(b=>{const s=b.dataset.side;const show=active&&(s==='score'||!f.team||f.team===s);if(b.classList.contains('show')!==!!show)b.classList.toggle('show',!!show);});
   SIDES.forEach(s=>{const hit=now-(m.ringFlash[s]||0)<3000;$$(`.ring[data-side="${s}"]`).forEach(r=>{r.classList.toggle('on',m.led==='white');r.classList.toggle('hit',hit);});});
+  pollGP();
   requestAnimationFrame(tick);
 }
 setRoute();
