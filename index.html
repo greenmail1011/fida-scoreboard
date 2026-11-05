@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="新竹市無人機創新科技協會 無人機足球計分系統：LED 計分螢幕、計時、犯規燈、裁判遙控器，支援電腦、鍵盤、PS4 手把與 Firebase 多裝置同步。">
 <link rel="icon" href="logo.png">
-<title>無人機足球經賽營運系統</title>
+<title>無人機足球競賽營運系統</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Orbitron:wght@600;800&family=Russo+One&display=swap">
@@ -241,7 +241,7 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
   <div class="brand">
     <span class="brand-mark" aria-hidden="true"></span>
     <div>
-      <h1>無人機足球經賽營運系統</h1>
+      <h1>無人機足球競賽營運系統</h1>
       <p>DRONE SOCCER SCOREBOARD · 依 FIDA 2022 賽事系統復刻</p>
     </div>
   </div>
@@ -381,6 +381,12 @@ const srvNow=()=>Date.now()+(cloud.on?cloud.offset:0);
 let L={sound:true,voice:true,cloud:null};
 try{L=Object.assign(L,JSON.parse(localStorage.getItem('fida-local-v1')||'{}'));}catch(e){}
 function saveL(){try{localStorage.setItem('fida-local-v1',JSON.stringify(L));}catch(e){}}
+/* offline queue: actions taken while the room is unreachable, uploaded when the connection returns */
+let pending=null;try{pending=JSON.parse(localStorage.getItem('fida-pending-v1')||'null');}catch(e){pending=null;}
+function savePending(){try{if(pending)localStorage.setItem('fida-pending-v1',JSON.stringify(pending));else localStorage.removeItem('fida-pending-v1');}catch(e){}}
+const wantCloud=()=>!!(L.cloud&&L.cloud.room&&!L.cloud.readOnly);
+const offlineNow=()=>wantCloud()&&(!cloud.on||cloud.status!=='online');
+function ensurePending(baseRev){if(!pending||pending.room!==L.cloud.room)pending={room:L.cloud.room,baseRev:baseRev||0,actions:[]};}
 
 /* ---------- shared state: teams, duration, match ---------- */
 function newMatch(S,rev){return {phase:'setup',remaining:S.cfg.duration*1000,endAt:0,owner:'',score:{red:0,blue:0},fouls:{red:0,blue:0},led:'off',ringFlash:{red:0,blue:0},flash:null,ev:null,log:[],rev:rev||0};}
@@ -404,8 +410,8 @@ let bc=null;try{bc=new BroadcastChannel('fida-ds-score');}catch(e){}
 const peers={};
 if(bc)bc.onmessage=ev=>{const d=ev.data;if(!d||d.from===WIN_ID)return;
   if(d.hb){peers[d.from]=Object.assign({t:Date.now()},d.hb);return;}
-  if(d.state&&!cloud.on){state=normalize(d.state);save();renderAll();playEv();}};
-function commitLocal(){save();if(bc&&!cloud.on){try{bc.postMessage({from:WIN_ID,state});}catch(e){}}renderAll();playEv();}
+  if(d.state&&(!cloud.on||cloud.status!=='online')){state=normalize(d.state);save();renderAll();playEv();}};
+function commitLocal(){save();if(bc&&(!cloud.on||cloud.status!=='online')){try{bc.postMessage({from:WIN_ID,state});}catch(e){}}renderAll();playEv();}
 
 /* ---------- helpers ---------- */
 const tname=(S,s)=>(S.teams[s]&&S.teams[s].name)||SIDE_ZH[s];
@@ -514,9 +520,10 @@ function act(type,side,arg){
   const pre=reduce(state,type,side,arg,srvNow());
   if(!pre.ok){if(pre.toast){toast(pre.toast);if(pre.err&&L.sound)SFX.err();}return;}
   if(cloud.on&&cloud.readOnly){toast('這台裝置只能觀看，請在上方輸入房間 PIN 連線');return;}
-  if(!cloud.on){
+  if(!cloud.on||offlineNow()){
     const before=state.match;state=pre.S;
     if(type==='reset')undoStack.length=0;else if(pre.undo)pushUndo(before,state.match.rev);
+    if(offlineNow()){ensurePending(before.rev);pending.actions.push({type,side:side||null,arg:arg===undefined?null:arg});savePending();renderCloud();}
     if(pre.toast)toast(pre.toast);
     if(type==='timeup')gpRumbleMain(900);
     commitLocal();return;
@@ -539,8 +546,9 @@ function undo(){
   const restore=cur=>{if(!cur||cur.match.rev!==top.rev)return null;const prev=JSON.parse(top.before);
     if(prev.phase==='running'&&cur.match.phase==='running'){prev.endAt=cur.match.endAt;prev.owner=cur.match.owner;}
     prev.flash=null;prev.ev=cur.match.ev;const S=JSON.parse(JSON.stringify(cur));S.match=prev;return S;};
-  if(!cloud.on){const S=restore(state);if(!S){toast('狀態已改變，無法復原，請改用 −1 修正');undoStack.length=0;renderAll();return;}
-    undoStack.pop();state=normalize(S);commitLocal();toast('已復原上一步');return;}
+  if(!cloud.on||offlineNow()){const S=restore(state);if(!S){toast('狀態已改變，無法復原，請改用 −1 修正');undoStack.length=0;renderAll();return;}
+    if(offlineNow()){ensurePending(state.match.rev);savePending();}
+    undoStack.pop();state=normalize(S);commitLocal();toast('已復原上一步');renderCloud();return;}
   if(cloud.readOnly)return;
   let ok=false;
   cloud.ref.transaction(cur=>{const S=restore(cur?normalize(cur):null);ok=!!S;return S||undefined;},(err,committed)=>{
@@ -578,10 +586,11 @@ async function cloudConnect(room,pin,readOnly,silent){
     cloudOff(true);
     Object.assign(cloud,{on:true,room,readOnly,db,ref:db.ref(`rooms/${room}/state`),status:'connecting'});
     db.ref('.info/serverTimeOffset').on('value',s=>{cloud.offset=s.val()||0;});
-    db.ref('.info/connected').on('value',s=>{cloud.status=s.val()?'online':'offline';renderCloud();});
+    db.ref('.info/connected').on('value',s=>{cloud.status=s.val()?'online':'offline';renderCloud();renderAll();if(s.val())syncPending();});
     let first=true;
     cloud.ref.on('value',snap=>{
       const v=snap.val();
+      if(pending&&pending.room===room&&!cloud.readOnly){first=false;syncPending();return;}
       if(!v){if(!cloud.readOnly&&first){first=false;cloud.ref.set(JSON.parse(JSON.stringify(state))).catch(e=>{cloud.err='建立房間資料失敗：'+e.message;renderCloud();});}return;}
       if(first){first=false;lastEv=v.match&&v.match.ev?v.match.ev.id:null;undoStack.length=0;}
       state=normalize(v);save();renderAll();playEv();
@@ -589,10 +598,26 @@ async function cloudConnect(room,pin,readOnly,silent){
     if(!readOnly||!L.cloud){L.cloud={room,pin:readOnly?'':pin,readOnly};saveL();}
     if(!silent)toast(readOnly?`已連上房間 ${room}（觀看）`:created?`已建立房間 ${room}`:`已加入房間 ${room}`);
   }catch(e){
-    cloud.status='off';cloud.err=e.message||String(e);
+    cloud.status='off';cloud.err=e.message||String(e);cloud.retry=!/PIN|房間代碼/.test(cloud.err);
     if(/load|載入|network|fetch/i.test(cloud.err))cloud.err='連不上 Firebase。請確認網路，或改用 GitHub Pages 網址開啟（預覽環境無法連線）。';
     throw e;
   }finally{cloud.busy=false;renderCloud();}
+}
+function syncPending(){
+  if(!pending||!cloud.on||cloud.readOnly||cloud.status!=='online'||pending.room!==cloud.room||syncPending.busy)return;
+  syncPending.busy=true;const local=JSON.parse(JSON.stringify(state)),p=pending;let mode='';
+  cloud.ref.transaction(cur=>{
+    const remote=cur?normalize(cur):null;
+    if(!remote||remote.match.rev===p.baseRev){mode='push';return local;}
+    let S=remote;p.actions.forEach(a=>{const r=reduce(S,a.type,a.side,a.arg,srvNow());if(r.ok)S=r.S;});mode='merge';return S;
+  },(err,committed)=>{
+    syncPending.busy=false;
+    if(err){cloud.err='同步失敗：'+(err.code||err.message);renderCloud();return;}
+    if(!committed)return;
+    const n=p.actions.length;pending=null;savePending();undoStack.length=0;cloud.err='';
+    toast(mode==='push'?`網路已恢復，已上傳離線期間的 ${n} 筆紀錄`:`網路已恢復，其他裝置也有更新，已合併離線期間的 ${n} 筆紀錄`);
+    renderCloud();renderAll();
+  });
 }
 function linkFor(view){let base;try{base=location.origin+location.pathname;}catch(e){base='';}return `${base}?room=${encodeURIComponent(cloud.room||'')}#${view}`;}
 function renderCloud(){
@@ -600,12 +625,17 @@ function renderCloud(){
     if(el.contains(document.activeElement)&&!cloud.on)return;
     const c=el.dataset.cid;
     if(cloud.on){
-      const st={online:'已連線',offline:'離線，重新連線中',connecting:'連線中'}[cloud.status]||'連線中';
-      el.innerHTML=`<b>雲端房間 ${esc(cloud.room)}</b><span class="chip ${cloud.status}">${st}</span><span class="chip">${cloud.readOnly?'觀看':'可操作'}</span>
+      const st={online:'已連線',offline:cloud.readOnly?'離線，顯示最後資料':'離線 · 本機記分中',connecting:'連線中'}[cloud.status]||'連線中';
+      el.innerHTML=`<b>雲端房間 ${esc(cloud.room)}</b><span class="chip ${cloud.status}">${st}</span><span class="chip">${cloud.readOnly?'觀看':'可操作'}</span>${pending&&pending.actions.length?`<span class="chip offline">待同步 ${pending.actions.length} 筆</span>`:''}
         <span style="flex:1"></span><button class="opbtn" type="button" data-cloud="off">中斷連線</button>
         <div class="links"><div><span>計分螢幕</span><code>${esc(linkFor('score-screen'))}</code><button type="button" data-copy="score-screen">複製</button></div>
         <div><span>裁判遙控</span><code>${esc(linkFor('control'))}</code><button type="button" data-copy="control">複製</button></div></div>
         ${cloud.err?`<div class="err">${esc(cloud.err)}</div>`:''}`;
+    }else if(wantCloud()){
+      const n=pending&&pending.room===L.cloud.room?pending.actions.length:0;
+      el.innerHTML=`<b>雲端房間 ${esc(L.cloud.room)}</b><span class="chip offline">${cloud.busy?'連線中':'離線 · 本機記分中'}</span>${n?`<span class="chip offline">待同步 ${n} 筆</span>`:''}
+        <span style="flex:1"></span><button class="opbtn" type="button" data-cloud="retry"${cloud.busy?' disabled':''}>重新連線</button><button class="opbtn" type="button" data-cloud="off">改用本機模式</button>
+        <span class="hint">沒有網路時照常計分，資料先存在這台裝置；網路恢復後會自動連線並上傳。</span>`;
     }else{
       const room=(L.cloud&&L.cloud.room)||qsRoom||'';
       el.innerHTML=`<b>雲端同步</b><span class="chip">本機模式</span>
@@ -621,11 +651,17 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-cloud],[data-copy]');if(!b)return;
   if(b.dataset.copy){const t=linkFor(b.dataset.copy);const done=()=>toast('已複製連結');
     if(navigator.clipboard)navigator.clipboard.writeText(t).then(done,()=>{const c=b.parentElement.querySelector('code');const r=document.createRange();r.selectNodeContents(c);const s=getSelection();s.removeAllRanges();s.addRange(r);toast('請手動複製已選取的連結');});return;}
-  if(b.dataset.cloud==='off'){cloudOff(false);undoStack.length=0;renderCloud();renderAll();toast('已中斷連線，改為本機模式');return;}
+  if(b.dataset.cloud==='off'){cloudOff(false);pending=null;savePending();undoStack.length=0;renderCloud();renderAll();toast('已中斷連線，改為本機模式');return;}
+  if(b.dataset.cloud==='retry'){if(L.cloud)cloudConnect(L.cloud.room,L.cloud.pin,false).catch(()=>{});return;}
   const box=b.closest('.js-cloud');const room=$('[data-cr]',box).value,pin=$('[data-cp-pin]',box).value;
   cloudConnect(room,pin,false).catch(()=>{});
 });
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.closest&&e.target.closest('.js-cloud input')){const b=e.target.closest('.js-cloud').querySelector('[data-cloud="on"]');if(b)b.click();}});
+
+/* keep trying to reach the room while the network is down */
+function retryCloud(){if(wantCloud()&&!cloud.on&&!cloud.busy&&cloud.retry!==false&&navigator.onLine!==false)cloudConnect(L.cloud.room,L.cloud.pin,false,true).catch(()=>{});}
+setInterval(retryCloud,15000);
+window.addEventListener('online',()=>setTimeout(retryCloud,800));
 
 /* ---------- score stage ---------- */
 const stages=[];

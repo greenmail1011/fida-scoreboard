@@ -2,7 +2,7 @@
 
 新竹市無人機創新科技協會
 
-依 FIDA 2022 國土交通部長官盃使用的經賽營運系統（[影片](https://www.youtube.com/watch?v=FwyhHYzZLeU)）復刻的計分系統，只保留計時、比分與犯規，單一 `index.html`，不需安裝。
+依 FIDA 2022 國土交通部長官盃使用的競賽營運系統（[影片](https://www.youtube.com/watch?v=FwyhHYzZLeU)）復刻的計分系統，只保留計時、比分與犯規，單一 `index.html`，不需安裝。
 
 網站：https://greenmail1011.github.io/fida-scoreboard/
 
@@ -44,6 +44,8 @@ USB 或藍牙連上後，在總覽或電腦操作頁按任一鍵即可偵測，�
    - 計分螢幕：`?room=代碼#score-screen`，開啟即觀看，不需要 PIN
    - 裁判遙控：`?room=代碼#control`，需輸入同一組 PIN 才能操作
 3. 所有操作以 Firebase transaction 寫入，多位裁判同時按也不會互相覆蓋；計時以 Firebase 伺服器時間為準。
+
+離線：沒有網路時照常計分，紀錄先存在該裝置（重新整理也不會遺失），網路恢復後自動上傳；斷線期間其他裝置也有更新時會自動合併。
 
 安全規則：分數公開可讀；只有輸入正確 PIN 的裝置可以寫入；PIN 本身無法被讀取。
 
