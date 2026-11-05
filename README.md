@@ -1,5 +1,7 @@
 # 無人機足球計分系統（FIDA 復刻版）
 
+新竹市無人機創新科技協會
+
 依 FIDA 2022 國土交通部長官盃使用的經賽營運系統（[影片](https://www.youtube.com/watch?v=FwyhHYzZLeU)）復刻的計分系統，只保留計時、比分與犯規，單一 `index.html`，不需安裝。
 
 網站：https://greenmail1011.github.io/fida-scoreboard/
@@ -32,3 +34,17 @@ USB 或藍牙連上後，在總覽或電腦操作頁按任一鍵即可偵測，�
 | 副審 | ✕ 得分、△ 防守犯規、○ 進攻犯規、□ 得分−1、↓ 犯規−1 |
 
 時間到自動終場時，主審手把會震動（需 Chrome 或 Edge）。
+
+## 雲端同步（Firebase Realtime Database）
+不連雲端時是「本機模式」，資料存在瀏覽器，同一台電腦的分頁會同步。
+
+要讓多台裝置一起用（場館電腦當計分螢幕、裁判用手機或筆電操作）：
+1. 在總覽或電腦操作頁上方輸入**房間代碼**（3–12 個英數字）和 **PIN**（4–12 字），按「連線」。新的代碼會自動建立房間，第一個連線的人設定 PIN。
+2. 連線後會出現兩個連結：
+   - 計分螢幕：`?room=代碼#score-screen`，開啟即觀看，不需要 PIN
+   - 裁判遙控：`?room=代碼#control`，需輸入同一組 PIN 才能操作
+3. 所有操作以 Firebase transaction 寫入，多位裁判同時按也不會互相覆蓋；計時以 Firebase 伺服器時間為準。
+
+安全規則：分數公開可讀；只有輸入正確 PIN 的裝置可以寫入；PIN 本身無法被讀取。
+
+Firebase 專案：`fida-scoreboard`（帳號 dronex666666），資料庫位置 asia-southeast1（新加坡）。
