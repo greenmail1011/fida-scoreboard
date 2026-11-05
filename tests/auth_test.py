@@ -145,6 +145,20 @@ with sync_playwright() as p:
     pg.screenshot(path=f'{OUT}/9_mobile.png', clip={'x': 0, 'y': 0, 'width': 390, 'height': 420})
     check('9 no horizontal scroll on phone', pg.evaluate('document.documentElement.scrollWidth<=innerWidth+1'))
 
+    # 10. built-in admins work right after login, without being added to the list
+    pg.goto(BASE + '#control'); pg.wait_for_timeout(500)
+    for em in ['Tomy@fzt.cc', 'greenmail1011@gmail.com']:
+        pg.evaluate(f"localStorage.setItem('mock-login-as','{em}')")
+        pg.locator('#v-control [data-auth="in"]').click(); pg.wait_for_timeout(500)
+        check(f'10 {em} is admin', '管理員' in auth_txt() and '不是' not in auth_txt(), auth_txt())
+        check(f'10 {em} rules allow writing', pg.evaluate("firebase.database().ref('rooms/MAIN/state/cfg/duration').set(180).then(()=>'ok',e=>e.code)") == 'ok')
+        pg.locator('#v-control [data-auth="out"]').click(); pg.wait_for_timeout(300)
+    pg.evaluate(f"localStorage.setItem('mock-login-as','{SUPER}')")
+    pg.locator('#v-control [data-auth="in"]').click(); pg.wait_for_timeout(500)
+    check('10 super sees built-in admins', all(e in auth_txt() for e in ['tomycbf@gmail.com', 'tomy@fzt.cc', 'zikai2000@gmail.com', 'greenmail1011@gmail.com']) and '內建管理員' in auth_txt(), auth_txt())
+    pg.set_viewport_size({'width': 1280, 'height': 900}); pg.wait_for_timeout(200)
+    pg.screenshot(path=f'{OUT}/10_list.png', clip={'x': 0, 'y': 0, 'width': 1280, 'height': 420})
+
     check('no page errors', not errs, '; '.join(errs))
     b.close()
 srv.shutdown()

@@ -4,7 +4,7 @@
       "$room": {
         "state": {
           ".read": true,
-          ".write": "$room.matches(/^[A-Z0-9]{3,12}$/) && auth != null && auth.token.email != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'dronex666666@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)"
+          ".write": "$room.matches(/^[A-Z0-9]{3,12}$/) && auth != null && auth.token.email != null && auth.token.email_verified == true && (auth.token.email.toLowerCase() == 'dronex666666@gmail.com' || auth.token.email.toLowerCase() == 'greenmail1011@gmail.com' || auth.token.email.toLowerCase() == 'tomycbf@gmail.com' || auth.token.email.toLowerCase() == 'tomy@fzt.cc' || auth.token.email.toLowerCase() == 'zikai2000@gmail.com' || root.child('admins').child(auth.token.email.toLowerCase().replace('.', ',')).val() == true)"
         }
       }
     },

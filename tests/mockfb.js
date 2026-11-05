@@ -29,7 +29,8 @@
   const authFn=()=>auth;authFn.GoogleAuthProvider=GoogleAuthProvider;
   /* ---- rules ---- */
   const isSuper=()=>!!(user&&user.emailVerified&&user.email.toLowerCase()===SUPER);
-  const isAdm=d=>!!(user&&user.emailVerified&&(isSuper()||get(d,'admins/'+key(user.email))===true));
+  const BUILT=['greenmail1011@gmail.com','tomycbf@gmail.com','tomy@fzt.cc','zikai2000@gmail.com'];
+  const isAdm=d=>!!(user&&user.emailVerified&&(isSuper()||BUILT.includes(user.email.toLowerCase())||get(d,'admins/'+key(user.email))===true));
   function canRead(p){const k=parts(p);if(k[0]==='.info')return true;
     if(k[0]==='rooms'&&k[2]==='state')return true;
     if(k[0]==='admins'&&k.length===1)return isSuper();

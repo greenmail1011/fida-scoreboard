@@ -392,6 +392,9 @@ const srvNow=()=>Date.now()+(cloud.on?cloud.offset:0);
 
 /* ---------- admin sign-in (Google). Anything that changes the score needs an admin account. ---------- */
 const SUPER_ADMIN='dronex666666@gmail.com';
+/* built-in admins: always allowed, also written into database.rules.json */
+const BUILTIN_ADMINS=["greenmail1011@gmail.com", "tomycbf@gmail.com", "tomy@fzt.cc", "zikai2000@gmail.com"];
+const isBuiltin=e=>BUILTIN_ADMINS.includes(String(e||'').toLowerCase());
 const emailKey=e=>String(e||'').trim().toLowerCase().replace(/\./g,',');
 const keyEmail=k=>String(k||'').replace(/,/g,'.');
 const EMAIL_RE=/^[^\s@,#$\[\]\/]+@[^\s@,#$\[\]\/]+\.[^\s@,#$\[\]\/]+$/;
@@ -433,6 +436,7 @@ function initAuth(){
         listRef=fb.database().ref('admins');
         listRef.on('value',s=>{who.list=Object.keys(s.val()||{}).filter(k=>(s.val()||{})[k]===true).map(keyEmail).sort();renderAuth();},e=>{who.err='讀取管理員名單失敗：'+e.message;renderAuth();});
         return;}
+      if(u.emailVerified&&isBuiltin(who.email)){setAdmin(true);return;}
       /* until the database answers (e.g. offline), keep this device's last result for the same account */
       who.admin=!!(ADM&&ADM.uid===u.uid&&ADM.admin);who.checked=!!(ADM&&ADM.uid===u.uid);syncRole();renderAuth();renderCloud();renderAll();
       if(!u.emailVerified){setAdmin(false);return;}
@@ -467,7 +471,7 @@ async function googleLogout(){
 async function adminAdd(email){
   email=String(email||'').trim().toLowerCase();
   if(!EMAIL_RE.test(email)){toast('請輸入正確的 email');return;}
-  if(email===SUPER_ADMIN){toast('超級管理員不用加入名單');return;}
+  if(email===SUPER_ADMIN||isBuiltin(email)){toast('這個帳號已經是內建管理員');return;}
   try{const fb=await initAuth();await fb.database().ref('admins/'+emailKey(email)).set(true);toast(`已加入管理員 ${email}`);}
   catch(e){toast('新增失敗：'+(e.code||e.message));}
 }
@@ -494,7 +498,7 @@ function renderAuth(){
     if(who.isSuper){
       const list=who.list;
       h+=`<div class="admins"><div class="admins-h">管理員名單 <small>只有超級管理員看得到</small></div>
-        <ul><li><span>${esc(SUPER_ADMIN)}</span><em>超級管理員</em></li>${list?list.map(e=>`<li><span>${esc(e)}</span><button class="opbtn" type="button" data-admin-rm="${esc(e)}">移除</button></li>`).join(''):'<li><span>讀取中…</span></li>'}</ul>
+        <ul><li><span>${esc(SUPER_ADMIN)}</span><em>超級管理員</em></li>${BUILTIN_ADMINS.map(e=>`<li><span>${esc(e)}</span><em>內建管理員</em></li>`).join('')}${list?list.filter(e=>!isBuiltin(e)).map(e=>`<li><span>${esc(e)}</span><button class="opbtn" type="button" data-admin-rm="${esc(e)}">移除</button></li>`).join(''):'<li><span>讀取中…</span></li>'}</ul>
         <div class="admins-add"><input type="email" data-admin-new placeholder="新增管理員 email" autocomplete="off" aria-label="新增管理員 email"><button class="opbtn" type="button" data-admin-add>新增</button></div></div>`;
     }
     el.innerHTML=h;

@@ -40,7 +40,8 @@ USB 或藍牙連上後，在總覽或電腦操作頁按任一鍵即可偵測，�
 - 在總覽或電腦操作頁上方按「用 Google 登入」。同一台裝置登入一次即可，之後會自動記住，直到按「登出」
 - 登入過的管理員在沒有網路時仍可操作（沿用這台裝置上次確認的身分）
 - 計分螢幕（`#score-screen`）只是觀看，不需要登入
-- 超級管理員 `dronex666666@gmail.com` 登入後會看到「管理員名單」，可新增或移除管理員 email
+- 內建管理員（寫死在程式與規則裡）：`greenmail1011@gmail.com`、`tomycbf@gmail.com`、`tomy@fzt.cc`、`zikai2000@gmail.com`
+- 超級管理員 `dronex666666@gmail.com` 登入後會看到「管理員名單」，可再新增或移除其他管理員 email
 
 ## 雲端同步（Firebase Realtime Database）
 不連雲端時是「本機模式」，資料存在瀏覽器，同一台電腦的分頁會同步。
