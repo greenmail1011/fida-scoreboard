@@ -184,6 +184,11 @@ kbd{display:inline-block;min-width:20px;padding:1px 5px;border-radius:4px;border
 .chip::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
 .chip.online{color:var(--ok);background:rgba(60,207,122,.12)}
 .chip.offline,.chip.connecting{color:var(--amber);background:rgba(242,180,60,.12)}
+.cloud[hidden]{display:none}
+.cloud-tg{display:inline-flex;align-items:center;gap:6px}
+.cloud-tg .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.cloud-tg .dot.online{background:var(--ok)}.cloud-tg .dot.offline{background:var(--amber)}
+.cloud-tg .car{font-size:10px;opacity:.7}
 .auth .who{font:700 13px var(--f-ui);color:var(--fg);overflow-wrap:anywhere}
 .gbtn{display:inline-flex;align-items:center;gap:8px}
 .gbtn .g{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#fff;color:#4285f4;font:900 12px/1 Arial,sans-serif}
@@ -487,10 +492,10 @@ function renderAuth(){
     if(who.user||(!who.ready&&ADM)){
       const email=who.user?who.email:ADM.email,adm=isAdmin();
       const chip=who.isSuper?'<span class="chip online">超級管理員</span>':adm?`<span class="chip online">管理員${offline?'（離線沿用）':''}</span>`:who.checked?'<span class="chip offline">不是管理員 · 只能觀看</span>':'<span class="chip connecting">確認身分中</span>';
-      h=`<b>管理員登入</b><span class="who">${esc(email)}</span>${chip}<span style="flex:1"></span><button class="opbtn" type="button" data-auth="out">登出</button>`;
+      h=`<b>管理員登入</b><span class="who">${esc(email)}</span>${chip}<span style="flex:1"></span>${cloudTg()}<button class="opbtn" type="button" data-auth="out">登出</button>`;
       if(who.checked&&!adm&&who.user)h+=`<span class="hint">請超級管理員（${SUPER_ADMIN}）把這個 email 加入管理員名單，加入後這裡會自動變成「管理員」。</span>`;
     }else{
-      h=`<b>管理員登入</b><span class="chip">${who.loading?'載入中':'未登入 · 只能觀看'}</span><span style="flex:1"></span>
+      h=`<b>管理員登入</b><span class="chip">${who.loading?'載入中':'未登入 · 只能觀看'}</span><span style="flex:1"></span>${cloudTg()}
         <button class="opbtn gbtn" type="button" data-auth="in"${who.busy||who.loading?' disabled':''}><span class="g" aria-hidden="true">G</span>${who.busy?'登入中…':'用 Google 登入'}</button>
         <span class="hint">會動到分數的操作都要用管理員 Google 帳號登入；同一台裝置登入一次就好，之後會自動記住。計分螢幕觀看不用登入。</span>`;
     }
@@ -514,7 +519,7 @@ document.addEventListener('click',e=>{
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches&&e.target.matches('[data-admin-new]')){e.preventDefault();e.target.parentElement.querySelector('[data-admin-add]').click();}});
 
 /* ---------- local, per-device settings ---------- */
-let L={sound:true,voice:true,cloud:null};
+let L={sound:true,voice:true,cloud:null,cloudOpen:false};
 try{L=Object.assign(L,JSON.parse(localStorage.getItem('fida-local-v1')||'{}'));}catch(e){}
 function saveL(){try{localStorage.setItem('fida-local-v1',JSON.stringify(L));}catch(e){}}
 /* offline queue: actions taken while the room is unreachable, uploaded when the connection returns */
@@ -752,7 +757,17 @@ function syncPending(){
   });
 }
 function linkFor(view){let base;try{base=location.origin+location.pathname;}catch(e){base='';}return `${base}?room=${encodeURIComponent(cloud.room||'')}#${view}`;}
+function cloudTgInner(){
+  const pend=pending&&pending.actions.length;
+  let dot='',txt='雲端房間';
+  if(cloud.on){dot=cloud.status==='online'&&!pend?'online':'offline';txt=`雲端 ${cloud.room}`;}
+  else if(wantCloud()){dot='offline';txt=`雲端 ${L.cloud.room}`;}
+  return `${dot?`<i class="dot ${dot}"></i>`:''}${esc(txt)}${pend?` · 待同步 ${pend}`:''}<span class="car">${L.cloudOpen?'▲':'▼'}</span>`;
+}
+function cloudTg(){return `<button class="opbtn cloud-tg" type="button" data-cloud-tg aria-expanded="${L.cloudOpen?'true':'false'}" title="${L.cloudOpen?'收起':'打開'}雲端房間設定">${cloudTgInner()}</button>`;}
 function renderCloud(){
+  $$('[data-cloud-tg]').forEach(b=>{b.innerHTML=cloudTgInner();b.setAttribute('aria-expanded',L.cloudOpen?'true':'false');b.title=(L.cloudOpen?'收起':'打開')+'雲端房間設定';});
+  $$('.js-cloud').forEach(el=>{el.hidden=!L.cloudOpen;});
   $$('.js-cloud').forEach(el=>{
     if(el.contains(document.activeElement)&&!cloud.on)return;
     const c=el.dataset.cid;
@@ -779,6 +794,8 @@ function renderCloud(){
   });
 }
 document.addEventListener('click',e=>{
+  if(e.target.closest('[data-cloud-tg]')){L.cloudOpen=!L.cloudOpen;saveL();renderCloud();
+    if(L.cloudOpen){const box=$$('.js-cloud').find(el=>el.offsetParent);const i=box&&box.querySelector('[data-cr]');if(i)i.focus();}return;}
   const b=e.target.closest('[data-cloud],[data-copy]');if(!b)return;
   if(b.dataset.copy){const t=linkFor(b.dataset.copy);const done=()=>toast('已複製連結');
     if(navigator.clipboard)navigator.clipboard.writeText(t).then(done,()=>{const c=b.parentElement.querySelector('code');const r=document.createRange();r.selectNodeContents(c);const s=getSelection();s.removeAllRanges();s.addRange(r);toast('請手動複製已選取的連結');});return;}
